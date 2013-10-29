@@ -17,10 +17,10 @@ namespace SymbolicRegression
         static void Main(string[] args)
         {
             Console.WriteLine("Start ...");
-            //new Measure();
+            new Measure();
             //new TimerDemo().ProcessPowerTraceFile();
-            Parse p = new Parse(@"C:\Experiment\mtk");
-            p.process();
+            //Parse p = new Parse(@"C:\Experiment\mtk");
+            //p.process();
             Console.WriteLine("Complete ...");
            // Console.ReadKey();
         }        
@@ -255,7 +255,7 @@ namespace SymbolicRegression
 
                     case "80":
 
-                        //processSample();
+                        processSample();
                         break;
                 }
             }
