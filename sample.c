@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 {
     if(argc < 3)
     {
-        printf("Please specify [delay time (sec), number of loops, packagename], e.g., 1 100 com.snctln.game.BreakTheBlocks \n"); 
+        printf("Please specify [delay time (sec), number of loops, packagename], e.g., 1 100 com.snctln.game.BreakTheBlocks \n");
         exit(-1);
     }
 
@@ -22,7 +22,9 @@ int main(int argc, char **argv)
     
     FILE *fp, *fp2, *fp3_app, *fp_util,
          *fp_app_util,
-         *fp_freq,
+	 *fp_freq_4,
+	 *fp_freq_3,
+         *fp_freq_2,
          *fp_freq_1,
          *fp_mem_total,
          *fp_mem_app;
@@ -30,61 +32,67 @@ int main(int argc, char **argv)
     struct timeb t_start, t_current;
     struct stat st;
 
-    long            ms; // Milliseconds
-    time_t          s;  // Seconds
+    long ms; // Milliseconds
+    time_t s; // Seconds
     struct timespec spec;
 
     int i=0,j=1,t=0;
     int size = 1024;
     char buffer[size*1024], appId[size], buffer_app[size*10];
  
-    char buffer_freq[size];
+    char buffer_freq_2[size];
     char buffer_freq_1[size];
+    char buffer_freq_3[size];
+    char buffer_freq_4[size];
     char buffer_mem_total[size];
     char buffer_mem_app[size];
     char buffer_freq_null[2];
     char buffer_app_null[2];
 
-    float delay1    		= 	atof(argv[1]);        	//printf("delay1 %f\n", delay1);
-    float delay     		= 	atof(argv[1]);        	//printf("delay %f\n", delay);
-    float end	    		= 	atof(argv[2]);          //printf("end %f\n", end);
-    float nrows     		= 	end/delay;      	//printf("nrows %f\n", nrows);
-    float step      		= 	delay1;               	//printf("step %f\n", step);
+    float delay1                 =         atof(argv[1]);         //printf("delay1 %f\n", delay1);
+    float delay                 =         atof(argv[1]);         //printf("delay %f\n", delay);
+    float end                         =         atof(argv[2]); //printf("end %f\n", end);
+    float nrows                 =         end/delay;         //printf("nrows %f\n", nrows);
+    float step                 =         delay1;         //printf("step %f\n", step);
     char filename[100];
     
-    //Add the package name of the target AUT. 
+    //Add the package name of the target AUT.
     if(argc==4)
-	    strcpy(filename, argv[3]);
+         strcpy(filename, argv[3]);
     
     char aut[100];
     char freqs[100];
 
-    int ncolumns 		= 	size;
-    int isKilled 		= 	1;
-    int sleep 			= 	(int)(delay * 990000.0f);	printf("sleep %d\n",sleep);
-    int r 			= 	1024;
+    int ncolumns                       =         size;
+    int isKilled                       =         1;
+    int sleep                          =         (int)(delay * 990000.0f);        printf("sleep %d\n",sleep);
+    int r                              =         1024;
 
-    char **save_util 		= 	(char **)malloc(r * 1024 * sizeof(char *));
-    char **save_freq 		= 	(char **)malloc(r * sizeof(char *));
-    char **save_freq_1 		= 	(char **)malloc(r * sizeof(char *));
-    char **save_mem_total 	= 	(char **)malloc(r * 10 * sizeof(char *));
-    char **save_mem_app 	= 	(char **)malloc(r * 10 * sizeof(char *));
-    char **save_app 		= 	(char **)malloc(r * 1024 * sizeof(char *));
+    char **save_util                   =         (char **)malloc(r * 1024 * sizeof(char *));
+    char **save_freq_2                 =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_3                 =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_4                 =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_1                 =         (char **)malloc(r * sizeof(char *));
+    char **save_mem_total              =         (char **)malloc(r * 10 * sizeof(char *));
+    char **save_mem_app                =         (char **)malloc(r * 10 * sizeof(char *));
+    char **save_app                    =         (char **)malloc(r * 1024 * sizeof(char *));
 
     float xx;
     int x = 0;
 
-    //printf("allocate array\n");    
+    //printf("allocate array\n");
     for(xx=0.0; xx < nrows; xx++)
     {
-        save_util[x] 		= 	(char *)malloc(ncolumns * sizeof(char));
-        save_freq[x] 		= 	(char *)malloc(ncolumns * sizeof(char));
-        save_freq_1[x] 		= 	(char *)malloc(ncolumns * sizeof(char));
-        save_mem_total[x] 	= 	(char *)malloc(ncolumns * sizeof(char));
-        save_mem_app[x] 	= 	(char *)malloc(ncolumns * sizeof(char));
-        save_app[x] 		= 	(char *)malloc(ncolumns * sizeof(char));
+        save_util[x]                   =         (char *)malloc(ncolumns * sizeof(char));
+        save_freq_2[x]                 =         (char *)malloc(ncolumns * sizeof(char));
+	save_freq_4[x]                 =         (char *)malloc(ncolumns * sizeof(char));
+	save_freq_3[x]                 =         (char *)malloc(ncolumns * sizeof(char));
+        save_freq_1[x]                 =         (char *)malloc(ncolumns * sizeof(char));
+        save_mem_total[x]              =         (char *)malloc(ncolumns * sizeof(char));
+        save_mem_app[x]                =         (char *)malloc(ncolumns * sizeof(char));
+        save_app[x]                    =         (char *)malloc(ncolumns * sizeof(char));
         //printf("x = %d, xx= %f \n", x, xx);
-	++x;
+        ++x;
     }
 
     char appName[size];
@@ -107,7 +115,7 @@ int main(int argc, char **argv)
                 fgets(appId, sizeof appId, fp2);
                 fclose(fp2);
                 len = strlen(appId);
-             	//printf("1, PID length = %d\n",len);
+                     //printf("1, PID length = %d\n",len);
                 system("rm /data/local/tmp/tmp_aut");
             }
         }
@@ -123,7 +131,7 @@ int main(int argc, char **argv)
                 n[ strlen( n )-1 ] = '\0';
                 // Assign appName with specific pid
                 int c = sprintf(appName, "/proc/%s/stat",n);
-             	//printf("2, App name = %s\n",appName);
+                     //printf("2, App name = %s\n",appName);
                 int m = sprintf(memName, "/proc/%s/statm",n);
                 j=i;
             }
@@ -134,15 +142,15 @@ int main(int argc, char **argv)
                 strcpy(save_app[i], buffer_app);
                 buffer_app[0] = '\0';
                 fclose(fp3_app);
-              	//printf("3 util app %s \n",save_app[i]);
+                      //printf("3 util app %s \n",save_app[i]);
             }
-	    else //if AUT is not launched yet
-	    {
-	    	buffer_app_null[0] = '0';
-	    	buffer_app_null[1] = '\n';
-            	strcpy(save_app[i], buffer_app_null);
-            	buffer_app_null[0] = '\0';
-	    }
+         else //if AUT is not launched yet
+         {
+                 buffer_app_null[0] = '0';
+                 buffer_app_null[1] = '\n';
+                    strcpy(save_app[i], buffer_app_null);
+                    buffer_app_null[0] = '\0';
+         }
 
             if((fp_mem_app = fopen(memName,"r")) != NULL)
             {
@@ -155,12 +163,12 @@ int main(int argc, char **argv)
            }
         }
         else //if AUT is not launched yet
-	{
-	    buffer_app_null[0] = '0';
-	    buffer_app_null[1] = '\n';
+        {
+         buffer_app_null[0] = '0';
+         buffer_app_null[1] = '\n';
             strcpy(save_app[i], buffer_app_null);
             buffer_app_null[0] = '\0';
-	}
+        }
 
         //////////////////////////// mem (total) /////////////////////////////////////////////////////
         if((fp_mem_total = fopen("/proc/meminfo","r")) != NULL)
@@ -174,65 +182,97 @@ int main(int argc, char **argv)
                 }
                 count = 0;
                 buffer_mem_total[0] = '\0';
-               	//printf("5 mem total %s \n",save_mem_total[i]);
+                       //printf("5 mem total %s \n",save_mem_total[i]);
                 fclose(fp_mem_total);
         }
         
-        /////////////////////////////////////  utilization  /////////////////////////////////////////
-        if((fp = fopen("/proc/stat","r")) != NULL) 
-	{
+        ///////////////////////////////////// utilization /////////////////////////////////////////
+        if((fp = fopen("/proc/stat","r")) != NULL)
+        {
             char a[9999], b[9999];
-	    int r=1;
-            for(r=1; r<=3; r++)
-	    {
-		fgets(buffer,sizeof buffer,fp);
+            int r=1;
+            for(r=1; r<=5; r++)
+            {
+                fgets(buffer,sizeof buffer,fp);
                 if(buffer[0] == 'i') continue;
-                //printf("6. %s\n", buffer);
-	        strcat(a, buffer);
+                printf("6. %s\n", buffer);
+         	strcat(a, buffer);
                 //printf("6.1 %s\n",a);
-		buffer[0] = '\0';
-	    }
+                buffer[0] = '\0';
+            }
 
-	    strcpy(save_util[i],a);  
+            strcpy(save_util[i],a);
             buffer[0] = '\0';
             a[0] = '\0';
-	    //printf("6 util %s \n",save_util[i]);
+            //printf("6 util %s \n",save_util[i]);
             fclose(fp);
         }
 
-
-        //////////////////////////////// frequency 1 /////////////////////////////////////////////
-  	
-	if((fp_freq = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq","r")) != NULL)
-        {
-            fgets(buffer_freq, sizeof buffer_freq, fp_freq);
-            strcpy(save_freq[i], buffer_freq);
-            buffer_freq[0] = '\0';
-            //printf("7.1 freq %s \n",save_freq[i]);
-            fclose(fp_freq);
-	    //printf("%d",i);
-        }
-	else
-	{
-            buffer_freq_null[0] = '0';
-            strcpy(save_freq[i], buffer_freq_null);
-            buffer_freq_null[0] = '\0';
-        }
-
-        //////////////////////////////// frequency 2 ///////////////////////////////////////////////////
-        if((fp_freq_1 = fopen("/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq","r")) != NULL)
+        //////////////////////////////// frequency 1 /////////////////////////////////////////////          
+        if((fp_freq_1 = fopen("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq","r")) != NULL)
         {
             fgets(buffer_freq_1, sizeof buffer_freq_1, fp_freq_1);
             strcpy(save_freq_1[i], buffer_freq_1);
             buffer_freq_1[0] = '\0';
-            //printf("7.2 freq %s \n",save_freq_1[i]);
+            //printf("7.1 freq %s \n",save_freq[i]);
             fclose(fp_freq_1);
+         //printf("%d",i);
         }
         else
         {
             buffer_freq_null[0] = '0';
- 	    buffer_freq_null[1] = '\n';
             strcpy(save_freq_1[i], buffer_freq_null);
+            buffer_freq_null[0] = '\0';
+        }
+
+        //////////////////////////////// frequency 2 ///////////////////////////////////////////////////
+        if((fp_freq_2 = fopen("/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq","r")) != NULL)
+        {
+            fgets(buffer_freq_2, sizeof buffer_freq_2, fp_freq_2);
+            strcpy(save_freq_2[i], buffer_freq_2);
+            buffer_freq_2[0] = '\0';
+            //printf("7.2 freq %s \n",save_freq_1[i]);
+            fclose(fp_freq_2);
+        }
+        else
+        {
+            buffer_freq_null[0] = '0';
+            buffer_freq_null[1] = '\n';
+            strcpy(save_freq_2[i], buffer_freq_null);
+            buffer_freq_null[0] = '\0';
+        }
+
+ 	//////////////////////////////// frequency 3 ///////////////////////////////////////////////////
+        if((fp_freq_3 = fopen("/sys/devices/system/cpu/cpu2/cpufreq/scaling_cur_freq","r")) != NULL)
+        {
+            fgets(buffer_freq_3, sizeof buffer_freq_3, fp_freq_3);
+            strcpy(save_freq_3[i], buffer_freq_3);
+            buffer_freq_3[0] = '\0';
+            //printf("7.2 freq %s \n",save_freq_1[i]);
+            fclose(fp_freq_3);
+        }
+        else
+        {
+            buffer_freq_null[0] = '0';
+          buffer_freq_null[1] = '\n';
+            strcpy(save_freq_3[i], buffer_freq_null);
+            buffer_freq_null[0] = '\0';
+        }
+
+ 	//////////////////////////////// frequency 4 ///////////////////////////////////////////////////
+        if((fp_freq_4 = fopen("/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq","r")) != NULL)
+        {
+            fgets(buffer_freq_4, sizeof buffer_freq_4, fp_freq_4);
+            strcpy(save_freq_4[i], buffer_freq_4);
+            buffer_freq_4[0] = '\0';
+            //printf("7.2 freq %s \n",save_freq_1[i]);
+            fclose(fp_freq_4);
+        }
+        else
+        {
+            buffer_freq_null[0] = '0';
+            buffer_freq_null[1] = '\n';
+            strcpy(save_freq_4[i], buffer_freq_null);
             buffer_freq_null[0] = '\0';
         }
 
@@ -240,69 +280,78 @@ int main(int argc, char **argv)
         delay1 += step;
 
         //printf("sleep = %d, delay1 = %f, i = %d, end = %f \n",timeStamp, sleep, delay1, i, end);
-	
-	clock_gettime(CLOCK_REALTIME, &spec);
-    	s  = spec.tv_sec;
-    	ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds
-    	
-	//printf("Current time: %"PRIdMAX".%03ld seconds since the Epoch\n", (intmax_t)s, ms);
         
-	++i;
+        clock_gettime(CLOCK_REALTIME, &spec);
+        s = spec.tv_sec;
+        ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds
+            
+        //printf("Current time: %"PRIdMAX".%03ld seconds since the Epoch\n", (intmax_t)s, ms);
+        
+        ++i;
 
         if(delay1 > end) // save at the last time
         {
             //printf("end\n");
             fp_util = fopen("/data/local/tmp/stat/cpu_util.txt", "w");
-            fp_freq = fopen("/data/local/tmp/stat/freq.txt", "w");
+	    fp_freq_4 = fopen("/data/local/tmp/stat/freq4.txt", "w");
+	    fp_freq_3 = fopen("/data/local/tmp/stat/freq3.txt", "w");
+            fp_freq_2 = fopen("/data/local/tmp/stat/freq2.txt", "w");
             fp_freq_1 = fopen("/data/local/tmp/stat/freq1.txt", "w");
-	    fp_mem_app = fopen("/data/local/tmp/stat/mem_app.txt", "w");
+            fp_mem_app = fopen("/data/local/tmp/stat/mem_app.txt", "w");
             fp_mem_total = fopen("/data/local/tmp/stat/mem_total.txt", "w");
            
-	    int ii = 0;
+            int ii = 0;
             //printf("i = %d\n",i);
-	    int ff = 0;
+            int ff = 0;
             for(ii = 0; ii <= i-1; ii++)
-	    {
-                fprintf(fp_util,"%s "    	,     	save_util[ii]);
-   		fprintf(fp_freq,"%s "    	,     	save_freq[ii]);
-                fprintf(fp_freq_1,"%s "    	,     	save_freq_1[ii]);     
-		fprintf(fp_mem_app,"%s "    	,     	save_mem_app[ii]);
-		fprintf(fp_mem_total,"%s "    	,     	save_mem_total[ii]);                     
-		
-		/*for(ff=0; ff<=1; ff++)
-		{
-			fprintf(fp_freq,"%s "    	,     	save_freq[ii][ff]);
-                	fprintf(fp_freq_1,"%s "    	,     	save_freq_1[ii][ff]);
-                }*/
-		//printf("ii=%i\n",ii);
+            {
+                fprintf(fp_util,"%s "         ,         save_util[ii]);
+		fprintf(fp_freq_4,"%s "         ,         save_freq_4[ii]);                
+		fprintf(fp_freq_3,"%s "         ,         save_freq_3[ii]);
+		fprintf(fp_freq_2,"%s "         ,         save_freq_2[ii]);
+                fprintf(fp_freq_1,"%s "         ,         save_freq_1[ii]);
+                fprintf(fp_mem_app,"%s "         ,         save_mem_app[ii]);
+                fprintf(fp_mem_total,"%s "         ,         save_mem_total[ii]);
+                
+                /*for(ff=0; ff<=1; ff++)
+                {
+                        fprintf(fp_freq,"%s "         ,         save_freq[ii][ff]);
+        		fprintf(fp_freq_1,"%s "         ,         save_freq_1[ii][ff]);
+		}*/
+                //printf("ii=%i\n",ii);
             }
 
             fp_app_util = fopen("/data/local/tmp/stat/cpu_app.txt","w");
             int b=0;
-	    float bb;
+            float bb;
             int jj = 0;
            
             for(jj = 0; jj<= i-1; jj++)
             {
-                fprintf(fp_app_util,"%s "    	,     	save_app[jj]);
+                fprintf(fp_app_util,"%s "         ,         save_app[jj]);
             }
-      	    
-	    free(save_app);
+              
+            free(save_app);
             fclose(fp_app_util);
 
             n = NULL;
             free(save_util);
-            free(save_freq);
- 	    free(save_mem_app);
- 	    free(save_mem_total);
+            free(save_freq_1);
+	    free(save_freq_2);
+	    free(save_freq_3);
+	    free(save_freq_4);
+            free(save_mem_app);
+            free(save_mem_total);
            
             fclose(fp_util);
-            fclose(fp_freq);
+ 	    fclose(fp_freq_4);
+ 	    fclose(fp_freq_3);
+            fclose(fp_freq_2);
             fclose(fp_freq_1);
             fclose(fp_mem_app);
- 	    fclose(fp_mem_total);
+            fclose(fp_mem_total);
             
-	    printf("save app\n");
+            printf("save app\n");
 
             exit(-1);
         }
@@ -310,4 +359,3 @@ int main(int argc, char **argv)
 
     return(0);
 }
-
