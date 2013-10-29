@@ -74,37 +74,98 @@ namespace SymbolicRegression
             return rets;
         }
 
-        public static ArrayList TotalCpuUtilParse(String file, String cpu_stat, String cpu_app, ref ArrayList apps)
+        public static ArrayList manageCPUs(String file, String cpu_stat)
         {
-
             ArrayList utils = new ArrayList();
 
             if (!File.Exists(file + cpu_stat))
             {
                 return new ArrayList();
             }
-            
+
             string[] cpu_stats = File.ReadAllLines(file + cpu_stat);
-            string[] app_stats = File.ReadAllLines(file + cpu_app);
 
-            ArrayList cpu_ar = new ArrayList();
+
             ArrayList app_ar = new ArrayList();
+            ArrayList cleanCPUs = new ArrayList();
 
+            //Clean not cpu
             for (int i = 0; i < cpu_stats.Length; i++)
             {
                 string cpu = cpu_stats[i].Trim();
-                if (!(cpu.Contains("cpu0") || cpu.Contains("cpu1") || cpu == ""))
+
+                if (cpu.Contains("cpu0") || cpu.Contains("cpu1") || cpu.Contains("cpu2") || cpu.Contains("cpu3"))
                 {
-                    cpu_ar.Add(cpu);
+                    cleanCPUs.Add(cpu);
                 }
             }
 
-            for (int j = 0; j < app_stats.Length; j++)
+            for (int t = 0; t < cleanCPUs.Count; t++)
             {
-                if (string.IsNullOrEmpty(app_stats[j]) || string.IsNullOrWhiteSpace(app_stats[j])) continue;
-                app_ar.Add(app_stats[j].Trim());
+                string line = cleanCPUs[t].ToString();
+
             }
 
+            //////////// add code //////////////////
+
+            int num = 0;
+            for (int i = 0; i < cleanCPUs.Count; i++)
+            {
+                if (cleanCPUs[i].ToString().Contains("cpu0")) ++num;
+            }
+
+            ArrayList indexs = new ArrayList();
+            for (int j = 0; j < cleanCPUs.Count; j++)
+            {
+                string line = cleanCPUs[j].ToString();
+                string[] lines = line.Split(' ');
+                indexs.Add(lines[0]);
+            }
+
+
+            ArrayList arr2 = new ArrayList();
+            for (int i = 0; i < (num * 4); i++)
+            {
+                arr2.Add("cpu" + (i % 4));
+            }
+
+            int x = 0;
+            for (int i = 0; i < indexs.Count; i++)
+            {
+                if (!indexs[i].ToString().Equals(arr2[x]))
+                {
+                    do
+                    {
+
+                        arr2[x] = "";
+                        ++x;
+
+                    } while (!indexs[i].ToString().Equals(arr2[x]));
+                }
+
+                arr2[x] = cleanCPUs[i];
+                ++x;
+
+                if (i == (indexs.Count - 1))
+                {
+                    while (x < arr2.Count)
+                    {
+                        arr2[x] = "";
+                        ++x;
+                    }
+                }
+            }
+
+            //////////// end code ///////////////////
+
+            return arr2;
+        }
+
+        public static ArrayList TotalCpuUtilParse(ArrayList cpu)
+        {
+            ArrayList utils = new ArrayList();
+
+            /// Compute utilization ///
             ArrayList util_prev = new ArrayList();
             ArrayList util_cur = new ArrayList();
             double[] a = new double[7];
@@ -117,22 +178,36 @@ namespace SymbolicRegression
             //TextWriter wrt = new StreamWriter(@"D:\Research\Experiment\nexus_s\case0\App1_candy\test1\util_test.txt");
             double uTime_before = 0;
             double sTime_before = 0;
-            for (int i = 0; i < cpu_ar.Count; i++)
+            for (int i = 0; i < cpu.Count; i++)
             {
 
-                string[] cpu_current = cpu_ar[i].ToString().Split(' ');
+                string[] cpu_current = cpu[i].ToString().Split(' ');
 
-                for (int j = 0; j < cpu_current.Length; j++)
+                if (cpu_current.Length != 1)
                 {
-                    if (!string.IsNullOrEmpty(cpu_current[j]) && cpu_current[j] != "cpu")
-                        util_cur.Add(cpu_current[j]);
+                    for (int j = 0; j < cpu_current.Length; j++)
+                    {
+                        if (!string.IsNullOrEmpty(cpu_current[j]) && !cpu_current[j].Contains("cpu"))
+                            util_cur.Add(cpu_current[j]);
+
+                    }
+
+                    for (int k = 0; k < 7; k++)
+                    {
+                        b[k] = double.Parse(util_cur[k].ToString());
+                        total_cur += b[k];
+                    }
+                }
+                else
+                {
+                    for (int k = 0; k < 7; k++)
+                    {
+                        b[k] = 0;
+                        total_cur += b[k];
+                    }
                 }
 
-                for (int k = 0; k < 7; k++)
-                {
-                    b[k] = double.Parse(util_cur[k].ToString());
-                    total_cur += b[k];
-                }
+             
 
                 idle_cur = b[3];
 
@@ -140,35 +215,7 @@ namespace SymbolicRegression
                 double diff_total = total_cur - total_prev;
                 double diff_usage = (1000 * (diff_total - diff_idle) / diff_total) / 10;
 
-                string[] appLines = app_ar[i].ToString().Split();
-                double app_util = 0;
-                if (appLines.Length > 1)
-                {
-                    double uTime = double.Parse(appLines[13]);
-                    double sTime = double.Parse(appLines[14]);
-                    double userUtil = 100 * (uTime - uTime_before) / diff_total;
-                    double sysUtil = 100 * (sTime - sTime_before) / diff_total;
-                    app_util = userUtil + sysUtil;
-
-                    if (app_util > diff_usage)
-                    {
-                        Console.WriteLine("bug");
-                        app_util = diff_usage;
-                    }
-
-                    uTime_before = uTime;
-                    sTime_before = sTime;
-
-                   
-                }
-                else
-                {
-                    app_util = -1;
-                }
-
-                apps.Add(app_util);
-
-
+                if (double.IsNaN(diff_usage)) diff_usage = 0;
 
                 utils.Add(Math.Round(diff_usage,2));
 
@@ -176,11 +223,7 @@ namespace SymbolicRegression
                 total_prev = total_cur;
                 total_cur = 0;
                 util_cur.Clear();
-
-                //  wrt.WriteLine(diff_usage);
             }
-
-            //wrt.Close();
 
             return utils;
         }      
@@ -190,14 +233,47 @@ namespace SymbolicRegression
        
         public void process()
         {
-            
-
             ArrayList appCpu = new ArrayList();
-            ArrayList utils = TotalCpuUtilParse(this.folderName, @"\cpu_util.txt", @"\cpu_app.txt", ref appCpu);
-            ArrayList freqs = FreqParse(this.folderName + @"\freq.txt");
+            //ArrayList utils = TotalCpuUtilParse(this.folderName, @"\cpu_util.txt", @"\cpu_app.txt", ref appCpu);
+
+            ArrayList arr2 = manageCPUs(this.folderName, @"\cpu_util.txt");
+
+            ArrayList cpu_ar1 = new ArrayList();
+            ArrayList cpu_ar2 = new ArrayList();
+            ArrayList cpu_ar3 = new ArrayList();
+            ArrayList cpu_ar4 = new ArrayList();
+
+            for (int i = 0; i < arr2.Count; i += 4)
+            {
+                cpu_ar1.Add(arr2[i]);
+                cpu_ar2.Add(arr2[i + 1]);
+                cpu_ar3.Add(arr2[i + 2]);
+                cpu_ar4.Add(arr2[i + 3]);
+            }
+
+            //cpus
+            ArrayList cpu1_utils = TotalCpuUtilParse(cpu_ar1);
+            ArrayList cpu2_utils = TotalCpuUtilParse(cpu_ar2);
+            ArrayList cpu3_utils = TotalCpuUtilParse(cpu_ar3);
+            ArrayList cpu4_utils = TotalCpuUtilParse(cpu_ar4);
+            //freqs      
             ArrayList freqs1 = FreqParse(this.folderName + @"\freq1.txt");
+            ArrayList freqs2 = FreqParse(this.folderName + @"\freq2.txt");
+            ArrayList freqs3 = FreqParse(this.folderName + @"\freq3.txt");
+            ArrayList freqs4 = FreqParse(this.folderName + @"\freq4.txt");
+            //mem
             ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
 
+            TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
+
+            tw.WriteLine("cpu1 cpu2 cpu3 cpu4 freq1 freq2 freq3 freq4 mem");
+            for (int s = 0; s < cpu1_utils.Count; s++)
+            {
+                tw.WriteLine(cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + freqs1[s] + " " + freqs2[s] + " " + freqs3[s] + " " + freqs4[s] + " " + mems[s]);
+            }
+
+            tw.Close();         
+            
             Console.WriteLine("Processing complete....");
         }
       

@@ -17,10 +17,10 @@ namespace SymbolicRegression
         static void Main(string[] args)
         {
             Console.WriteLine("Start ...");
-            new Measure();
+            //new Measure();
             //new TimerDemo().ProcessPowerTraceFile();
-            //Parse p = new Parse(@"C:\Users\pok\Research\Experiment\mtk");
-            //p.process();
+            Parse p = new Parse(@"C:\Experiment\mtk");
+            p.process();
             Console.WriteLine("Complete ...");
            // Console.ReadKey();
         }        
@@ -29,7 +29,7 @@ namespace SymbolicRegression
     class Measure
     {
         //Set and start countdown dialog
-        public int time = 70;
+        public int time = 80;
         public TimerDemo timer;
         public void CountDown()
         {
@@ -172,7 +172,7 @@ namespace SymbolicRegression
 
         public int start, stop;
 
-        string savePath = @"C:\Users\pok\Research\Experiment\mtk";
+        string savePath = @"C:\Experiment\mtk";
 
         public TimerDemo() { }
 
@@ -230,46 +230,55 @@ namespace SymbolicRegression
                         //t1.Join();
                         break;
 
-                    case "10": Console.WriteLine("Start Power sampling");
+                    /*case "10": Console.WriteLine("Start Power sampling");
+                        Thread monsoon = new Thread(StartMonsoon);
+                        monsoon.Start();
                         //Depend on your power measure device.
-                        break;
+                        break;*/
 
                     /* case "20": Console.WriteLine("Start benchmarked app");
                          new Thread(startBenchmarkApp).Start();
                          break; */
 
-                    case "50":
+                    case "60":
                     
                         Thread t2 = new Thread(pullFile);
                         t2.Start();
                         t2.Join();
                         break;
 
-                    case "60":
+                    case "70":
                         Thread t3 = new Thread(removeFile);
                         t3.Start();
                         t3.Join();
                         break;
 
-                    case "70":
+                    case "80":
 
-                        processSample();
+                        //processSample();
                         break;
-
                 }
             }
-            
         }
 
         public void startSampling()
         {
-            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "echo sh -c \"./data/local/tmp/sample 1 30 &\" | adb shell"); //25 mins
+            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "echo sh -c \"./data/local/tmp/sample2 1 "+(this.stop-30)+" & \" | adb shell"); //25 mins
             sample.CreateNoWindow = true;
             sample.UseShellExecute = false;
             sample.RedirectStandardError = true;
             sample.RedirectStandardOutput = true;
             Process process = Process.Start(sample);
-           
+        }
+
+        public void StartMonsoon()
+        {
+            //int measureDuration = 150; //seconds
+            Process powerMonitor = new Process();
+            powerMonitor.StartInfo.FileName = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
+            powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=3.70 /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + "\\power.pt4  /TRIGGER=DTXD" + (this.stop - 50) + "A"; //DTYD60A
+            powerMonitor.Start();
+            powerMonitor.WaitForExit();
         }
 
        /* public void startBenchmarkApp()
