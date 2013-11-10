@@ -17,10 +17,10 @@ namespace SymbolicRegression
         static void Main(string[] args)
         {
             Console.WriteLine("Start ...");
-            new Measure();
+            //new Measure();
             //new TimerDemo().ProcessPowerTraceFile();
-            //Parse p = new Parse(@"C:\Experiment\mtk");
-            //p.process();
+            Parse p = new Parse(@"C:\Users\pok\Research\Experiment\mtk");
+            p.process();
             Console.WriteLine("Complete ...");
            // Console.ReadKey();
         }        
@@ -42,128 +42,7 @@ namespace SymbolicRegression
             new Thread(CountDown).Start();
         }
     }
-    /*
-    public class Data
-    {
-        public ArrayList _dataArr = new ArrayList();
-
-        string audio_on = "audio_on";
-        string lcd_bright = "lcd_bright";
-        string cpu_sys = "cpu_sys";
-        string cpu_usr = "cpu_usr";
-        string cpu_freq = "cpu_freq";
-        string threeg_uplink_bytes = "3g_uplink_bytes";
-        string threeg_downlink_bytes = "3g_downlink_bytes";
-        string threeg_packets = "3g_packets";
-        //string threeg_state = "";
-        string wifi_packets = "wifi_packets";
-        string wifi_uplink_bytes = "wifi_uplink_bytes";
-        string wifi_downlink_bytes = "wifi_downlink_bytes";
-        //string wifi_uplink = "";
-        //string wifi_speed = "";
-        //string wifi_state = "";
-        Dictionary<string, string> dict = new Dictionary<string, string>();
-
-        public Data()
-        {
-                 
-            dict[cpu_sys] = "0";
-            dict[cpu_usr] = "0";
-            dict[cpu_freq] = "0";
-            
-            dict[lcd_bright] = "0";
-            
-            dict[audio_on] = "0";
-
-            dict[threeg_packets] = "0";
-            dict[threeg_uplink_bytes] = "0";
-            dict[threeg_downlink_bytes] = "0";
-            
-            dict[wifi_packets] = "0";
-            dict[wifi_uplink_bytes] = "0";
-            dict[wifi_downlink_bytes] = "0";
-        }
-
-        public Dictionary<string, string> filterComp()
-        {
-            int len = _dataArr.Count;
-
-            if (len <= 0) return null;
-
-            for (int j = 0; j < len; j++)
-            {
-                string component = _dataArr[j].ToString();
-
-                if (component.Contains("LCD-brightness"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[lcd_bright] = com[1];
-                }
-                else if (component.Contains("CPU-sys"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[cpu_sys] = com[1];
-                }
-                else if (component.Contains("CPU-usr"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[cpu_usr] = com[1];
-                }
-
-                else if (component.Contains("CPU-freq"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[cpu_freq] = com[1];
-                }
-
-                else if (component.Contains("3G-uplinkBytes"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[threeg_uplink_bytes] = com[1];
-                }
-
-                else if (component.Contains("3G-downlinkBytes"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[threeg_downlink_bytes] = com[1];
-                }
-
-                else if (component.Contains("3G-packets"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[threeg_packets] = com[1];
-                }
-                else if (component.Contains("Wifi-packets"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[wifi_packets] = com[1];
-                }
-                else if (component.Contains("Wifi-uplinkBytes"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[wifi_uplink_bytes] = com[1];
-                }
-                else if (component.Contains("Wifi-downlinkBytes"))
-                {
-                    string[] com = component.Split(' ');
-                    dict[wifi_downlink_bytes] = com[1];
-                }
-
-                else if (component.Contains("Audio-on"))
-                {
-                    string[] com = component.Split(' ');
-
-                    if (com[1].Equals("false"))
-                        dict[audio_on] = "0";
-                    else
-                        dict[audio_on] = "1";
-                }
-            }
-
-            return dict;
-        }
-    }
-    */
+   
     class TimerDemo : Form
     {
         System.Windows.Forms.Timer Clock;

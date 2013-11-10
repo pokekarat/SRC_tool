@@ -20,13 +20,15 @@ namespace SymbolicRegression
             this.folderName = folderName;
         }
 
-        public static ArrayList FreqParse(String folder)
+        public static ArrayList FreqParse(String input)
         {
-            string input = folder;
 
-
-            string[] lines = File.ReadAllLines(input);
             ArrayList rets = new ArrayList();
+
+            if (!File.Exists(input))
+                return rets;
+            
+            string[] lines = File.ReadAllLines(input);
 
             //int count = 0;
             foreach (string line in lines)
@@ -230,7 +232,7 @@ namespace SymbolicRegression
 
       
         public static bool isMem = false;
-       
+        public double[,] mat;
         public void process()
         {
             ArrayList appCpu = new ArrayList();
@@ -259,23 +261,127 @@ namespace SymbolicRegression
             //freqs      
             ArrayList freqs1 = FreqParse(this.folderName + @"\freq1.txt");
             ArrayList freqs2 = FreqParse(this.folderName + @"\freq2.txt");
-            ArrayList freqs3 = FreqParse(this.folderName + @"\freq3.txt");
-            ArrayList freqs4 = FreqParse(this.folderName + @"\freq4.txt");
+           // ArrayList freqs3 = FreqParse(this.folderName + @"\freq3.txt");
+           // ArrayList freqs4 = FreqParse(this.folderName + @"\freq4.txt");
             //mem
             ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
 
+            int rows = cpu1_utils.Count;
+            int cols = 9; // number of system variables
+            mat = new double[rows, cols];
+
+
             TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
 
-            tw.WriteLine("cpu1 cpu2 cpu3 cpu4 freq1 freq2 freq3 freq4 mem");
+            tw.WriteLine("cpu1 cpu2 cpu3 cpu4 freq1 freq2 mem");
             for (int s = 0; s < cpu1_utils.Count; s++)
             {
-                tw.WriteLine(cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + freqs1[s] + " " + freqs2[s] + " " + freqs3[s] + " " + freqs4[s] + " " + mems[s]);
+                string dataLine = cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + freqs1[s] + " " + freqs2[s] + " " + mems[s]; 
+                tw.WriteLine(dataLine);
+                
+                //Assign data to 2D matrix
+                mat[s, 0] = (double)cpu1_utils[s];
+                mat[s, 1] = (double)cpu2_utils[s];
+                mat[s, 2] = (double)cpu3_utils[s];
+                mat[s, 3] = (double)cpu4_utils[s];
+                mat[s, 4] = (double)freqs1[s];
+                mat[s, 5] = (double)freqs2[s];
+               // mat[s, 6] = (double)freqs3[s];
+               // mat[s, 7] = (double)freqs4[s];
+                mat[s, 6] = (double)mems[s];
             }
 
-            tw.Close();         
+            tw.Close();
+
+            similarCompute(mat);
+
+            apcluster();
             
-            Console.WriteLine("Processing complete....");
+            Console.WriteLine("Processing complete");
+            Console.ReadKey();
         }
+
+        private void apcluster()
+        {
+            //ProcessStartInfo apcluster = new ProcessStartInfo("cmd.exe", this.folderName + @"apcluster Similarities.txt Preferences.txt tmp");
+            //apcluster.CreateNoWindow = false;
+            //apcluster.UseShellExecute = true;
+            //Process process = Process.Start(apcluster);
+
+            Process apcluster = new Process();
+            apcluster.StartInfo.FileName = "C:\\Users\\pok\\Research\\Experiment\\mtk\\apcluster";
+            apcluster.StartInfo.Arguments = this.folderName+@"\Similarities.txt "+ this.folderName+@"\Preferences.txt "+this.folderName+@"\tmp";
+            apcluster.Start();
+            apcluster.WaitForExit();
+            
+        }
+
+        public void similarCompute(double[,] dat)
+        {
+            ArrayList results = new ArrayList();
+
+            int rows = dat.GetLength(0);
+            int cols = dat.GetLength(1);
+
+            TextWriter tw = new StreamWriter(this.folderName + @"\Similarities.txt");
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < rows; j++)
+                {
+                    if (i == j) continue;
+
+                    double sim = 0;
+                    double sum = 0;
+                    for (int k = 0; k < cols; k++)
+                    {
+                        sum += Math.Pow((dat[j,k]-dat[i, k]), 2);
+                    }
+                    sim = -1 * sum;
+                    tw.WriteLine(printDigit((i + 1)) + " " + printDigit((j + 1)) + " " + sim);
+                    results.Add(sim);
+                }
+            }
+
+            tw.Close();
+
+            //Preferences
+            //Find median of the input
+            results.Sort();
+            double[] d = (double[])results.ToArray(typeof(double));
+            double m = GetMedian(d);
+
+            tw = new StreamWriter(this.folderName + @"\Preferences.txt");
+            for (int i = 0; i < rows; i++)
+            {
+                tw.WriteLine(m);
+            }
+            tw.Close();
+
+        }
+
+        public string printDigit(int index)
+        {
+            string ret = "";
+
+            if (index < 10) return "00" + index.ToString();
+
+            if (index > 9 && index < 100)
+                ret = "0" + index.ToString();
+
+            if (index > 99) ret = index.ToString();
+
+            return ret;
+        }
+
+        public double GetMedian(double[] Value)
+        {
+            double Median = 0;
+            int size = Value.Length;
+            int mid = size / 2;
+            Median = (size % 2 != 0) ? Value[mid] : (Value[mid] + Value[mid + 1]) / 2;
+            return Median;
+        }
+
       
     }
 
