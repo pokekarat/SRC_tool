@@ -235,9 +235,9 @@ namespace SymbolicRegression
         public double[,] mat;
         public void process()
         {
-            ArrayList appCpu = new ArrayList();
+           /* ArrayList appCpu = new ArrayList();
             //ArrayList utils = TotalCpuUtilParse(this.folderName, @"\cpu_util.txt", @"\cpu_app.txt", ref appCpu);
-
+            
             ArrayList arr2 = manageCPUs(this.folderName, @"\cpu_util.txt");
 
             ArrayList cpu_ar1 = new ArrayList();
@@ -253,28 +253,23 @@ namespace SymbolicRegression
                 cpu_ar4.Add(arr2[i + 3]);
             }
 
-            //cpus
             ArrayList cpu1_utils = TotalCpuUtilParse(cpu_ar1);
             ArrayList cpu2_utils = TotalCpuUtilParse(cpu_ar2);
             ArrayList cpu3_utils = TotalCpuUtilParse(cpu_ar3);
             ArrayList cpu4_utils = TotalCpuUtilParse(cpu_ar4);
-            //freqs      
             ArrayList freqs1 = FreqParse(this.folderName + @"\freq1.txt");
             ArrayList freqs2 = FreqParse(this.folderName + @"\freq2.txt");
-           // ArrayList freqs3 = FreqParse(this.folderName + @"\freq3.txt");
-           // ArrayList freqs4 = FreqParse(this.folderName + @"\freq4.txt");
-            //mem
             ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
 
             int rows = cpu1_utils.Count;
             int cols = 9; // number of system variables
             mat = new double[rows, cols];
-
-
+              
             TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
-
             tw.WriteLine("cpu1 cpu2 cpu3 cpu4 freq1 freq2 mem");
-            for (int s = 0; s < cpu1_utils.Count; s++)
+
+            int numSample = cpu1_utils.Count;
+            for (int s = 0; s < numSample; s++)
             {
                 string dataLine = cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + freqs1[s] + " " + freqs2[s] + " " + mems[s]; 
                 tw.WriteLine(dataLine);
@@ -286,37 +281,134 @@ namespace SymbolicRegression
                 mat[s, 3] = (double)cpu4_utils[s];
                 mat[s, 4] = (double)freqs1[s];
                 mat[s, 5] = (double)freqs2[s];
-               // mat[s, 6] = (double)freqs3[s];
-               // mat[s, 7] = (double)freqs4[s];
                 mat[s, 6] = (double)mems[s];
             }
 
             tw.Close();
+            
+            double pref = similarCompute(mat);
+            */
+            string clusterOutput = this.folderName + @"\tmp";
+            //apcluster(this.folderName, pref, clusterOutput);
 
-            similarCompute(mat);
+            ArrayList cList1 = createCluster(clusterOutput);
 
-            apcluster();
+            //cluster2 have no power_i
+            ArrayList cList2 = createCluster(clusterOutput);
+
+            int cList1Size = cList1.Count;
+            int cList2Size = cList2.Count;
+
+            int foundCluster = -1;
+            for (int i = 0; i < cList2Size; i++)
+            {
+                Cluster c_i = (Cluster)cList2[i];
+
+                //Check every data in c_i are in the same cluster in cList1
+                for (int j = 0; j < c_i.data.Count; j++)
+                {
+                    // Find which cluster that j=0 exists in cList1
+                    if (j == 0)
+                    {
+                        for (int k = 0; k < cList1Size; k++)
+                        {
+                            Cluster c_k = (Cluster)cList1[k];
+                            for (int m = 0; m < c_k.data.Count; m++)
+                            {
+                                if (c_i.data[j].ToString().Equals(c_k.data[m].ToString()))
+                                {
+                                    foundCluster = k;
+                                    break;
+                                }
+                            }
+
+                            if (foundCluster != -1) break;
+                        }
+                    }
+                    else
+                    {
+                        // then j=1 is in the same cluster of j=0 in cList1 or not
+                        Cluster c_1 = (Cluster)cList1[foundCluster];
+                        bool isFound2 = false;
+                        for (int n = 0; n < c_1.data.Count; n++)
+                        {
+                            if (c_i.data[j].ToString().Equals(c_1.data[n].ToString()))
+                            {
+                                isFound2 = true;
+                                break;
+                            }
+                        }
+
+                        if (!isFound2)
+                        {
+                            //They are in different groups in cList1
+
+                        }
+                    }
+                }
+            }
             
             Console.WriteLine("Processing complete");
             Console.ReadKey();
         }
 
-        private void apcluster()
+        private ArrayList createCluster(string clusterPath1)
         {
-            //ProcessStartInfo apcluster = new ProcessStartInfo("cmd.exe", this.folderName + @"apcluster Similarities.txt Preferences.txt tmp");
-            //apcluster.CreateNoWindow = false;
-            //apcluster.UseShellExecute = true;
-            //Process process = Process.Start(apcluster);
+            string[] idx = File.ReadAllLines(clusterPath1+@"\idx.txt");
+          
+            ArrayList data = new ArrayList();
+            for (int i = 0; i < idx.Length; i++)
+            {
+                if (String.IsNullOrEmpty(idx[i]))
+                {
+                    continue;
+                }
+                data.Add(idx[i]);
+            }
 
-            Process apcluster = new Process();
-            apcluster.StartInfo.FileName = "C:\\Users\\pok\\Research\\Experiment\\mtk\\apcluster";
-            apcluster.StartInfo.Arguments = this.folderName+@"\Similarities.txt "+ this.folderName+@"\Preferences.txt "+this.folderName+@"\tmp";
-            apcluster.Start();
-            apcluster.WaitForExit();
-            
+            int numSample = data.Count;
+
+            ArrayList cList = new ArrayList();
+
+            bool isFound = false;
+            for (int s = 0; s < numSample; s++)
+            {
+                int exemplar = int.Parse(data[s].ToString());
+                if (cList.Count != 0)
+                {
+                    for (int i = 0; i < cList.Count; i++)
+                    {
+                        Cluster cTmp = (Cluster)cList[i];
+                        if (cTmp.examplar == exemplar)
+                        {
+                            cTmp.data.Add(s);
+                            isFound = true;
+                            break;
+                        }
+                    }
+
+                    if (!isFound)
+                    {
+                        Cluster c = new Cluster();
+                        c.examplar = exemplar;
+                        c.data.Add(s);
+                        cList.Add(c);
+                    }
+                }
+                else
+                {
+                    Cluster c = new Cluster();
+                    c.examplar = exemplar;
+                    c.data.Add(s);
+                    cList.Add(c);
+                }
+                isFound = false;
+            }
+
+            return cList;
         }
 
-        public void similarCompute(double[,] dat)
+        public double similarCompute(double[,] dat)
         {
             ArrayList results = new ArrayList();
 
@@ -324,6 +416,7 @@ namespace SymbolicRegression
             int cols = dat.GetLength(1);
 
             TextWriter tw = new StreamWriter(this.folderName + @"\Similarities.txt");
+
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < rows; j++)
@@ -337,29 +430,42 @@ namespace SymbolicRegression
                         sum += Math.Pow((dat[j,k]-dat[i, k]), 2);
                     }
                     sim = -1 * sum;
-                    tw.WriteLine(printDigit((i + 1)) + " " + printDigit((j + 1)) + " " + sim);
+                    //tw.WriteLine(printDigit((i + 1)) + " " + printDigit((j + 1)) + " " + sim);
+                    tw.WriteLine((i + 1) + " " + (j + 1) + " " + sim);
                     results.Add(sim);
                 }
             }
-
             tw.Close();
 
             //Preferences
-            //Find median of the input
             results.Sort();
             double[] d = (double[])results.ToArray(typeof(double));
             double m = GetMedian(d);
 
-            tw = new StreamWriter(this.folderName + @"\Preferences.txt");
+            /*tw = new StreamWriter(this.folderName + @"\Preferences.txt");
             for (int i = 0; i < rows; i++)
             {
                 tw.WriteLine(m);
             }
             tw.Close();
+            */
 
+            return m;
         }
 
-        public string printDigit(int index)
+        private void apcluster(string path, double pref, string output)
+        {
+
+            Process apcluster = new Process();
+            apcluster.StartInfo.FileName = path + "\apcluster";
+            apcluster.StartInfo.Arguments = path + @"\Similarities.txt " + pref + " " + output;
+            apcluster.Start();
+            apcluster.WaitForExit();
+        
+        }
+
+        //This function is not used.
+        /* public string printDigit(int index)
         {
             string ret = "";
 
@@ -371,19 +477,36 @@ namespace SymbolicRegression
             if (index > 99) ret = index.ToString();
 
             return ret;
-        }
+        } */
 
         public double GetMedian(double[] Value)
         {
+
             double Median = 0;
             int size = Value.Length;
             int mid = size / 2;
             Median = (size % 2 != 0) ? Value[mid] : (Value[mid] + Value[mid + 1]) / 2;
             return Median;
+        
         }
-
-      
     }
 
+    public class Cluster
+    {
+        public int examplar = -1;
+        public ArrayList data;
 
+        public Cluster() {
+            data = new ArrayList();
+        }
+    }
+
+    public class SubCluster
+    {
+        public ArrayList data;
+        public SubCluster()
+        {
+            data = new ArrayList();
+        }
+    }
 }
