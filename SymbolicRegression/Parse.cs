@@ -6,6 +6,7 @@ using System.Collections;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using Parse;
 
 namespace SymbolicRegression
 {
@@ -18,6 +19,51 @@ namespace SymbolicRegression
         public Parse(string folderName)
         {
             this.folderName = folderName;
+        }
+
+        public static double PowerParse(string folder, int start)
+        {
+            string input = folder + @"\power.pt4";
+
+            FileStream pt4Stream = File.Open(
+                                                 input,
+                                                  FileMode.Open,
+                                                  FileAccess.Read,
+                                                  FileShare.ReadWrite
+                                              );
+
+
+            BinaryReader pt4Reader = new BinaryReader(pt4Stream);
+
+            // reader the file header
+            PT4.Pt4Header header = new PT4.Pt4Header();
+
+            PT4.ReadHeader(pt4Reader, ref header);
+
+            // read the Status Packet
+            PT4.StatusPacket statusPacket = new PT4.StatusPacket();
+            PT4.ReadStatusPacket(pt4Reader, ref statusPacket);
+
+            // determine the number of samples in the file
+            long sampleCount = PT4.SampleCount(pt4Reader, header.captureDataMask);
+
+            // pre-position input file to the beginning of the sample // data (saves a lot of repositioning in the GetSample // routine)
+            pt4Reader.BaseStream.Position = PT4.sampleOffset;
+            // process the samples sequentially, beginning to end
+            PT4.Sample sample = new PT4.Sample();
+
+            double sum = 0;
+            for (long sampleIndex = start; sampleIndex < sampleCount; sampleIndex++)
+            {
+                PT4.GetSample(sampleIndex, header.captureDataMask, statusPacket, pt4Reader, ref sample);
+                sum += (sample.mainCurrent * 3.7);
+            }
+
+            pt4Reader.Close();
+            
+            double avg = sum / ((sampleCount - start) + 1);
+            
+            return avg;
         }
 
         public static ArrayList FreqParse(String input)
@@ -235,7 +281,7 @@ namespace SymbolicRegression
         public double[,] mat;
         public void process()
         {
-           /* ArrayList appCpu = new ArrayList();
+            ArrayList appCpu = new ArrayList();
             //ArrayList utils = TotalCpuUtilParse(this.folderName, @"\cpu_util.txt", @"\cpu_app.txt", ref appCpu);
             
             ArrayList arr2 = manageCPUs(this.folderName, @"\cpu_util.txt");
@@ -260,11 +306,7 @@ namespace SymbolicRegression
             ArrayList freqs1 = FreqParse(this.folderName + @"\freq1.txt");
             ArrayList freqs2 = FreqParse(this.folderName + @"\freq2.txt");
             ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
-
-            int rows = cpu1_utils.Count;
-            int cols = 9; // number of system variables
-            mat = new double[rows, cols];
-              
+            
             TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
             tw.WriteLine("cpu1 cpu2 cpu3 cpu4 freq1 freq2 mem");
 
@@ -273,85 +315,34 @@ namespace SymbolicRegression
             {
                 string dataLine = cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + freqs1[s] + " " + freqs2[s] + " " + mems[s]; 
                 tw.WriteLine(dataLine);
-                
-                //Assign data to 2D matrix
-                mat[s, 0] = (double)cpu1_utils[s];
-                mat[s, 1] = (double)cpu2_utils[s];
-                mat[s, 2] = (double)cpu3_utils[s];
-                mat[s, 3] = (double)cpu4_utils[s];
-                mat[s, 4] = (double)freqs1[s];
-                mat[s, 5] = (double)freqs2[s];
-                mat[s, 6] = (double)mems[s];
             }
 
             tw.Close();
             
-            double pref = similarCompute(mat);
-            */
-            string clusterOutput = this.folderName + @"\tmp";
-            //apcluster(this.folderName, pref, clusterOutput);
+            
 
+           
+
+           /* double pref = similarCompute(mat);
+
+            string clusterOutput = this.folderName + @"\tmp";
+            apcluster(this.folderName, pref, clusterOutput);
+
+            //cluster1 considers power
             ArrayList cList1 = createCluster(clusterOutput);
 
-            //cluster2 have no power_i
+            //cluster2 has no consider power_i
             ArrayList cList2 = createCluster(clusterOutput);
 
             int cList1Size = cList1.Count;
             int cList2Size = cList2.Count;
-
-            int foundCluster = -1;
-            for (int i = 0; i < cList2Size; i++)
-            {
-                Cluster c_i = (Cluster)cList2[i];
-
-                //Check every data in c_i are in the same cluster in cList1
-                for (int j = 0; j < c_i.data.Count; j++)
-                {
-                    // Find which cluster that j=0 exists in cList1
-                    if (j == 0)
-                    {
-                        for (int k = 0; k < cList1Size; k++)
-                        {
-                            Cluster c_k = (Cluster)cList1[k];
-                            for (int m = 0; m < c_k.data.Count; m++)
-                            {
-                                if (c_i.data[j].ToString().Equals(c_k.data[m].ToString()))
-                                {
-                                    foundCluster = k;
-                                    break;
-                                }
-                            }
-
-                            if (foundCluster != -1) break;
-                        }
-                    }
-                    else
-                    {
-                        // then j=1 is in the same cluster of j=0 in cList1 or not
-                        Cluster c_1 = (Cluster)cList1[foundCluster];
-                        bool isFound2 = false;
-                        for (int n = 0; n < c_1.data.Count; n++)
-                        {
-                            if (c_i.data[j].ToString().Equals(c_1.data[n].ToString()))
-                            {
-                                isFound2 = true;
-                                break;
-                            }
-                        }
-
-                        if (!isFound2)
-                        {
-                            //They are in different groups in cList1
-
-                        }
-                    }
-                }
-            }
+            */
+            
             
             Console.WriteLine("Processing complete");
-            Console.ReadKey();
+           // Console.ReadKey();
         }
-
+/*
         private ArrayList createCluster(string clusterPath1)
         {
             string[] idx = File.ReadAllLines(clusterPath1+@"\idx.txt");
@@ -430,7 +421,6 @@ namespace SymbolicRegression
                         sum += Math.Pow((dat[j,k]-dat[i, k]), 2);
                     }
                     sim = -1 * sum;
-                    //tw.WriteLine(printDigit((i + 1)) + " " + printDigit((j + 1)) + " " + sim);
                     tw.WriteLine((i + 1) + " " + (j + 1) + " " + sim);
                     results.Add(sim);
                 }
@@ -440,58 +430,33 @@ namespace SymbolicRegression
             //Preferences
             results.Sort();
             double[] d = (double[])results.ToArray(typeof(double));
-            double m = GetMedian(d);
-
-            /*tw = new StreamWriter(this.folderName + @"\Preferences.txt");
-            for (int i = 0; i < rows; i++)
-            {
-                tw.WriteLine(m);
-            }
-            tw.Close();
-            */
-
-            return m;
+            return GetMedian(d);
+           
         }
 
         private void apcluster(string path, double pref, string output)
         {
 
             Process apcluster = new Process();
-            apcluster.StartInfo.FileName = path + "\apcluster";
+            apcluster.StartInfo.FileName = path + @"\apcluster";
             apcluster.StartInfo.Arguments = path + @"\Similarities.txt " + pref + " " + output;
             apcluster.Start();
             apcluster.WaitForExit();
         
         }
 
-        //This function is not used.
-        /* public string printDigit(int index)
-        {
-            string ret = "";
-
-            if (index < 10) return "00" + index.ToString();
-
-            if (index > 9 && index < 100)
-                ret = "0" + index.ToString();
-
-            if (index > 99) ret = index.ToString();
-
-            return ret;
-        } */
-
         public double GetMedian(double[] Value)
         {
-
             double Median = 0;
             int size = Value.Length;
             int mid = size / 2;
             Median = (size % 2 != 0) ? Value[mid] : (Value[mid] + Value[mid + 1]) / 2;
             return Median;
-        
         }
+ */
     }
 
-    public class Cluster
+ /*   public class Cluster
     {
         public int examplar = -1;
         public ArrayList data;
@@ -508,5 +473,5 @@ namespace SymbolicRegression
         {
             data = new ArrayList();
         }
-    }
+    }*/
 }
