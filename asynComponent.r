@@ -29,7 +29,7 @@ cluster2 <- apcluster(similar2, q=0.9)
 list2 <- c(1:length(cluster2@clusters))
 list1 <- c(1:length(cluster1@clusters))
 
-asyncTable <- cbind("time","power")
+asyncTable <- matrix(0, nrow=length(measure1[,1]), ncol=2)
 
 # For each cluster in cluster2
 for(i in list2)
@@ -137,17 +137,22 @@ for(i in list2)
 					
 				}
 				
+				cat("Modify power \n")
 				minPower <- min(unlist(powerList))
-				
+				cat("minPower ", minPower, "\n")
 				for(r in unlist(aList))
 				{
 					if(r == -1) break
-					p1 <- measureSync[r, length(measure1[1,])]
+					p1 <- measure1[r, length(measure1[1,])]
 					
 					if(p1 > minPower)
 					{
+						
 						asynPower <- (p1 - minPower)
-						asyncTable <- cbind(r, asynPower)
+						cat("r=",r,", pow=",asynPower,"\n")
+						asyncTable[r,1] <- r
+						asyncTable[r,2] <- asynPower
+						#cat("asyncTable",asyncTable,"\n")
 						measureSync[r, length(measure1[1,])] <- minPower
 					}	
 				}
@@ -160,4 +165,4 @@ for(i in list2)
 }
 
 write.table(measureSync, file = output, sep = " ", row.names=FALSE)
-write.table(asyncTable, file = async, sep = " ", row.names=FALSE)
+write.table(asyncTable, file = async, sep = " ", row.names=FALSE, col.names=c("Time","Power"))
