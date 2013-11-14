@@ -5,12 +5,14 @@ if(!is.element("apcluster", installed.packages()[,1]))
 		options(repos=r)})
 	install.packages("apcluster")
 
-}else{ print("apcluster already installed.")}
+}else{ 
+	print("apcluster already installed.")
+}
 
 require("apcluster")
 #print(commandArgs(TRUE)[1])
 
-path   <- "C:\\Users\\USER\\Documents\\GitHub\\SRC_tool\\"
+path   <- commandArgs(TRUE)[1] #"C:\\Users\\USER\\Documents\\GitHub\\SRC_tool\\"
 input  <- paste(path, "sample.txt", sep="")
 output <-  paste(path, "modifyPower.txt", sep="")
 async  <-  paste(path, "asyncTable.txt", sep="")
@@ -34,19 +36,19 @@ asyncTable <- matrix(0, nrow=length(measure1[,1]), ncol=2)
 # For each cluster in cluster2
 for(i in list2)
 {
-	cat("start i=",i,"\n")
+	#cat("start i=",i,"\n")
 	
 	# For each cluster in cluster1
 	for( j in list1)
 	{
 	
-		cat("j ",j,"\n")
+		#cat("j ",j,"\n")
 		# Verify and save true to another list
 		# cat(cluster2@clusters[[i]] %in% cluster1@clusters[[j]])
 		verify <- cluster2@clusters[[i]] %in% cluster1@clusters[[j]]
 		if(length(verify)==1) next
 		
-		cat(verify," xxxx \n")
+		#cat("verify ",verify,"\n")
 		tmp <- tmp2 <- verify[1]
 		
 		
@@ -61,7 +63,7 @@ for(i in list2)
 		# if all true, then cluster i has no asynchronous break.
 		if(tmp == TRUE)
 		{
-			cat("all true break\n")
+			#cat("all true break\n")
 			break
 			
 		}else{
@@ -72,16 +74,16 @@ for(i in list2)
 			{
 				aList = list()
 				aList[length(list1)+1] <- -1
-				cat("print 3 \n")
+				#cat("print 3 \n")
 				for( m in c(1:length(verify)))
 				{	
-					cat("print ",m, verify[m] ,"\n")	
+					#cat("print ",m, verify[m] ,"\n")	
 					if(isTRUE(verify[m]))
 					{
 						# create group and add it into
-						cat("check ",cluster2@clusters[[i]][m],"\n") 
+						#cat("check ",cluster2@clusters[[i]][m],"\n") 
 						aList[[j]][length(aList[[j]])+1] <- cluster2@clusters[[i]][m] 
-						cat("1. aList[",j,"]", aList[[j]], "\n")
+						#cat("1. aList[",j,"]", aList[[j]], "\n")
 					}
 				}
 				
@@ -92,13 +94,13 @@ for(i in list2)
 						
 						for( p in c(1:length(cluster1@clusters)))
 						{
-							cat("p = ",p,"\n")
+							#cat("p = ",p,"\n")
 							for( pp in c(1:length(cluster1@clusters[[p]])))
 							{
 								if(cluster2@clusters[[i]][m] == cluster1@clusters[[p]][pp])
 								{
 									aList[[p]][length(aList[[p]])+1] <- cluster2@clusters[[i]][m]
-									cat("2. aList[",p,"]", aList[[p]], "\n")
+									#cat("2. aList[",p,"]", aList[[p]], "\n")
 									break;
 								}
 							}
@@ -106,8 +108,8 @@ for(i in list2)
 					}
 				}
 				
-				cat("end ************************** \n")
-				cat("current cluster",i,"\n")
+				#cat("end ************************** \n")
+				#cat("current cluster",i,"\n")
 				
 				powerList <- list()
 				
@@ -116,7 +118,7 @@ for(i in list2)
 				for(a in c(1:length(aList)))
 				{
 					if(a == length(aList)) break
-					cat("a ",a,"\n")
+					#cat("a ",a,"\n")
 					#columns
 					powerSum <- 0
 					
@@ -124,22 +126,22 @@ for(i in list2)
 					
 					for(b in c(1:length(aList[[a]])))
 					{	
-						cat("b ",b,"\n")
+						#cat("b ",b,"\n")
 						power <- measure1[aList[[a]][b],length(measure1)]
 						powerSum <- powerSum + power
-						cat(powerSum,"\n")
+						#cat(powerSum,"\n")
 					}
 					
 					avgPower <- powerSum/length(aList[[a]])
-					cat("avgPower ",avgPower,"\n")
+					#cat("avgPower ",avgPower,"\n")
 					
 					powerList[a] <- avgPower
 					
 				}
 				
-				cat("Modify power \n")
+				#cat("Modify power \n")
 				minPower <- min(unlist(powerList))
-				cat("minPower ", minPower, "\n")
+				#cat("minPower ", minPower, "\n")
 				for(r in unlist(aList))
 				{
 					if(r == -1) break
@@ -149,7 +151,7 @@ for(i in list2)
 					{
 						
 						asynPower <- (p1 - minPower)
-						cat("r=",r,", pow=",asynPower,"\n")
+						#cat("r=",r,", pow=",asynPower,"\n")
 						asyncTable[r,1] <- r
 						asyncTable[r,2] <- asynPower
 						#cat("asyncTable",asyncTable,"\n")
@@ -166,3 +168,4 @@ for(i in list2)
 
 write.table(measureSync, file = output, sep = " ", row.names=FALSE)
 write.table(asyncTable, file = async, sep = " ", row.names=FALSE, col.names=c("Time","Power"))
+cat("finish: modifyPower.txt asyncTable.txt are saved\n")
