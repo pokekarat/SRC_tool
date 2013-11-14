@@ -10,15 +10,17 @@ if(!is.element("apcluster", installed.packages()[,1]))
 require("apcluster")
 #print(commandArgs(TRUE)[1])
 
-path <- "C:\\Users\\USER\\Documents\\GitHub\\SRC_tool\\"
-
-input <- paste(path, "sample.txt", sep="")
+path   <- "C:\\Users\\USER\\Documents\\GitHub\\SRC_tool\\"
+input  <- paste(path, "sample.txt", sep="")
+output <-  paste(path, "modifyPower.txt", sep="")
+async  <-  paste(path, "asyncTable.txt", sep="")
 
 # with power 
 measure1 <- read.table(input,sep="",header=T)
 similar1 <- expSimMat(measure1, r=2)
 cluster1 <- apcluster(similar1, q=0.2)
- 
+measureSync <- measure1 
+
 # without power
 measure2 <- measure1[,1:length(measure1)-1]
 similar2 <- expSimMat(measure2, r=2)
@@ -27,6 +29,7 @@ cluster2 <- apcluster(similar2, q=0.9)
 list2 <- c(1:length(cluster2@clusters))
 list1 <- c(1:length(cluster1@clusters))
 
+asyncTable <- cbind("time","power")
 
 # For each cluster in cluster2
 for(i in list2)
@@ -41,8 +44,11 @@ for(i in list2)
 		# Verify and save true to another list
 		# cat(cluster2@clusters[[i]] %in% cluster1@clusters[[j]])
 		verify <- cluster2@clusters[[i]] %in% cluster1@clusters[[j]]
-		cat(verify,"\n xxxx \n")
+		if(length(verify)==1) next
+		
+		cat(verify," xxxx \n")
 		tmp <- tmp2 <- verify[1]
+		
 		
 		#check if all member of tmp are all true or all false.
 		for( k in c(2:length(verify)))
@@ -65,7 +71,7 @@ for(i in list2)
 			if(tmp2 != FALSE)
 			{
 				aList = list()
-				aList[length(list1)+1] <- 9999
+				aList[length(list1)+1] <- -1
 				cat("print 3 \n")
 				for( m in c(1:length(verify)))
 				{	
@@ -101,9 +107,50 @@ for(i in list2)
 				}
 				
 				cat("end ************************** \n")
+				cat("current cluster",i,"\n")
 				
-				#process
+				powerList <- list()
 				
+				#process average energy
+				#rows
+				for(a in c(1:length(aList)))
+				{
+					if(a == length(aList)) break
+					cat("a ",a,"\n")
+					#columns
+					powerSum <- 0
+					
+					if(length(aList[[a]]) == 0) next
+					
+					for(b in c(1:length(aList[[a]])))
+					{	
+						cat("b ",b,"\n")
+						power <- measure1[aList[[a]][b],length(measure1)]
+						powerSum <- powerSum + power
+						cat(powerSum,"\n")
+					}
+					
+					avgPower <- powerSum/length(aList[[a]])
+					cat("avgPower ",avgPower,"\n")
+					
+					powerList[a] <- avgPower
+					
+				}
+				
+				minPower <- min(unlist(powerList))
+				
+				for(r in unlist(aList))
+				{
+					if(r == -1) break
+					p1 <- measureSync[r, length(measure1[1,])]
+					
+					if(p1 > minPower)
+					{
+						asynPower <- (p1 - minPower)
+						asyncTable <- cbind(r, asynPower)
+						measureSync[r, length(measure1[1,])] <- minPower
+					}	
+				}
 				break;
 			}
 		}
@@ -112,8 +159,5 @@ for(i in list2)
 	#cat("\n")
 }
 
-
-#nClus <- length(cluster@clusters)
-#i_list<-c(1: nClus)
-#write.table(measure, file = output, sep = " ", row.names=FALSE)
-#write.table(asyncTable, file = async, sep = " ", row.names=FALSE)
+write.table(measureSync, file = output, sep = " ", row.names=FALSE)
+write.table(asyncTable, file = async, sep = " ", row.names=FALSE)
