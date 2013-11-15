@@ -15,9 +15,9 @@
 
 int main(int argc, char **argv)
 {
-    if(argc < 4)
+    if(argc < 5)
     {
-        printf("Please specify [sample rate (Hz)] [sample duration (sec)] [wifi-path] [packagename], e.g., 1 100 /sys/class/net/wlan0/ com.snctln.game.BreakTheBlocks \n");
+        printf("Please specify [sample rate (Hz)] [sample duration (sec)] [wifi-path] [packagename], e.g., 1 100 /sys/class/net/wlan0/ com.android.google.youtube \n");
         exit(-1);
     }
 
@@ -41,14 +41,7 @@ int main(int argc, char **argv)
     sprintf(txByte,"%s/statistics/tx_bytes",wifiPath);
     sprintf(rxByte,"%s/statistics/rx_bytes",wifiPath);
 
-    //mode = 1 is train mode, 2 is test mode
-    int mode = 1;
- 
-    if(argc == 5)
-    {	
-	strcpy(packageName, argv[4]);
-	mode = 2;
-    }
+    strcpy(packageName, argv[4]);
     
 
     //Create directory if it not exists
@@ -77,7 +70,10 @@ int main(int argc, char **argv)
          *fp_tx_pk,
          *fp_rx_pk,
          *fp_tx_byte,
-         *fp_rx_byte;
+         *fp_rx_byte,
+ 	 *fp_capacity,
+         *fp_volt,
+         *fp_temp;
 
     struct timeb t_start, t_current;
     struct stat st;
@@ -115,7 +111,9 @@ int main(int argc, char **argv)
     char buffer_freq_null[2];
     char buffer_app_null[2];
 
-   
+    char buffer_capacity[size];
+    char buffer_volt[size];
+    char buffer_temp[size];
    
     char aut[100];
     char freqs[100];
@@ -124,33 +122,35 @@ int main(int argc, char **argv)
     int sleep                    =         (int)(delay * 990000.0f);       // printf("sleep %d\n",sleep);
     int r                        =         1024;
 
-    char **save_util                 =         (char **)malloc(r * 1024 * sizeof(char *));
-    char **save_freq_0                 =         (char **)malloc(r * sizeof(char *));
-    char **save_freq_1                 =         (char **)malloc(r * sizeof(char *));
-    char **save_freq_2                 =         (char **)malloc(r * sizeof(char *));
-    char **save_freq_3                 =         (char **)malloc(r * sizeof(char *));
-    char **save_freq_4                 =         (char **)malloc(r * sizeof(char *));
-    char **save_freq_5                 =         (char **)malloc(r * sizeof(char *));
-    char **save_freq_6                 =         (char **)malloc(r * sizeof(char *));
-    char **save_freq_7                 =         (char **)malloc(r * sizeof(char *));
-    char **save_tx_pk                =         (char **)malloc(r * 1024 * sizeof(char *));
-    char **save_rx_pk                =         (char **)malloc(r * 1024 * sizeof(char *));
-    char **save_tx_byte                =         (char **)malloc(r * 1024 * sizeof(char *));
-    char **save_rx_byte                =         (char **)malloc(r * 1024 * sizeof(char *));
-    char **save_mem_total         =         (char **)malloc(r * 10 * sizeof(char *));
+    char **save_util             =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_0           =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_1           =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_2           =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_3           =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_4           =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_5           =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_6           =         (char **)malloc(r * sizeof(char *));
+    char **save_freq_7           =         (char **)malloc(r * sizeof(char *));
+    char **save_tx_pk            =         (char **)malloc(r * sizeof(char *));
+    char **save_rx_pk            =         (char **)malloc(r * sizeof(char *));
+    char **save_tx_byte          =         (char **)malloc(r * sizeof(char *));
+    char **save_rx_byte          =         (char **)malloc(r * sizeof(char *));
+    char **save_mem_total        =         (char **)malloc(r * sizeof(char *));
+    char **save_capacity 	 = 	   (char **)malloc(r * sizeof(char *));
+    char **save_volt 		 = 	   (char **)malloc(r * sizeof(char *));
+    char **save_temp 		 = 	   (char **)malloc(r * sizeof(char *));
    
-    char **save_mem_app         =         (char **)malloc(r * 10 * sizeof(char *));
-    char **save_app                 =         (char **)malloc(r * 1024 * sizeof(char *));
-    char **save_uid_snd                =         (char **)malloc(r * 1024 * sizeof(char *));
-    char **save_uid_rcv                =         (char **)malloc(r * 1024 * sizeof(char *));
+    char **save_mem_app          =         (char **)malloc(r * sizeof(char *));
+    char **save_app              =         (char **)malloc(r * sizeof(char *));
+    char **save_uid_snd          =         (char **)malloc(r * sizeof(char *));
+    char **save_uid_rcv          =         (char **)malloc(r * sizeof(char *));
 
     float xx;
     int x = 0;
     for(xx=0.0; xx < nrows; xx++)
     {
-        //printf("allocate array\n");
-        if(mode == 1) {
-		save_util[x]                 =         (char *)malloc(ncolumns * sizeof(char));
+       
+		save_util[x]                   =         (char *)malloc(ncolumns * sizeof(char));
 		save_freq_0[x]                 =         (char *)malloc(ncolumns * sizeof(char));
 		save_freq_1[x]                 =         (char *)malloc(ncolumns * sizeof(char));
 		save_freq_2[x]                 =         (char *)malloc(ncolumns * sizeof(char));
@@ -159,19 +159,21 @@ int main(int argc, char **argv)
 		save_freq_5[x]                 =         (char *)malloc(ncolumns * sizeof(char));
 		save_freq_6[x]                 =         (char *)malloc(ncolumns * sizeof(char));
 		save_freq_7[x]                 =         (char *)malloc(ncolumns * sizeof(char));
-		save_mem_total[x]            =         (char *)malloc(ncolumns * sizeof(char));
-		save_tx_pk[x]                =         (char *)malloc(ncolumns * sizeof(char));
-		save_tx_byte[x]              =         (char *)malloc(ncolumns * sizeof(char));
-		save_rx_pk[x]                =         (char *)malloc(ncolumns * sizeof(char));
-		save_rx_byte[x]              =         (char *)malloc(ncolumns * sizeof(char));
-	}
+		save_mem_total[x]              =         (char *)malloc(ncolumns * sizeof(char));
+		save_tx_pk[x]                  =         (char *)malloc(ncolumns * sizeof(char));
+		save_tx_byte[x]                =         (char *)malloc(ncolumns * sizeof(char));
+		save_rx_pk[x]                  =         (char *)malloc(ncolumns * sizeof(char));
+		save_rx_byte[x]                =         (char *)malloc(ncolumns * sizeof(char));
+		save_capacity[x] 	       = 	 (char *)malloc(ncolumns * sizeof(char));
+ 	        save_volt[x] 		       = 	 (char *)malloc(ncolumns * sizeof(char));
+		save_temp[x] 		       = 	 (char *)malloc(ncolumns * sizeof(char));
 
-	if(mode == 2) {
-	 	save_mem_app[x]         =         (char *)malloc(ncolumns * sizeof(char));
-		save_app[x]                 =         (char *)malloc(ncolumns * sizeof(char));
-		save_uid_snd[x]                =         (char *)malloc(ncolumns * sizeof(char));
-		save_uid_rcv[x]                =         (char *)malloc(ncolumns * sizeof(char));
-	}
+	
+	 	save_mem_app[x]         	=         (char *)malloc(ncolumns * sizeof(char));
+		save_app[x]                 	=         (char *)malloc(ncolumns * sizeof(char));
+		save_uid_snd[x]                	=         (char *)malloc(ncolumns * sizeof(char));
+		save_uid_rcv[x]                	=         (char *)malloc(ncolumns * sizeof(char));
+	
 
         //printf("x = %d, xx= %f \n", x, xx);
         ++x;
@@ -194,8 +196,7 @@ int main(int argc, char **argv)
     for(;;)
     {
         
-        if(mode == 2)
-        {
+       
 		if(pidLen == 0)
 		{
 		    sprintf(aut, "ps | grep %s > /dev/null", packageName);
@@ -242,8 +243,8 @@ int main(int argc, char **argv)
 		        //nn[strlen(nn)-1] = '\0';
 		        int c1 = sprintf(uid_stat_snd, "/proc/uid_stat/%s/tcp_snd",nn);
 		        int c2 = sprintf(uid_stat_rcv, "/proc/uid_stat/%s/tcp_rcv",nn);
-		        //printf("1.1, uid stat snd = %s\n",uid_stat_snd);
-		        //printf("1.2, uid stat rcv = %s\n",uid_stat_rcv);
+		        printf("1.1, uid stat snd = %s\n",uid_stat_snd);
+		        printf("1.2, uid stat rcv = %s\n",uid_stat_rcv);
 		    }
 
 		  if((fp_uid_snd = fopen(uid_stat_snd,"r")) != NULL)
@@ -252,7 +253,7 @@ int main(int argc, char **argv)
 		        strcpy(save_uid_snd[i], buffer_uid_snd);
 		        buffer_uid_snd[0] = '\0';
 		        fclose(fp_uid_snd);
-		        //printf("1.1.1 uid snd %s \n",save_uid_snd[i]);
+		        printf("1.1.1 uid snd %s \n",save_uid_snd[i]);
 		    }
 		 else //if AUT is not launched yet
 		 {
@@ -268,7 +269,7 @@ int main(int argc, char **argv)
 		        strcpy(save_uid_rcv[i], buffer_uid_rcv);
 		        buffer_uid_rcv[0] = '\0';
 		        fclose(fp_uid_rcv);
-		        //printf("1.1.1 uid rcv %s \n",save_uid_rcv[i]);
+		        printf("1.1.1 uid rcv %s \n",save_uid_rcv[i]);
 		    }
 		 else //if AUT is not launched yet
 		 {
@@ -300,9 +301,9 @@ int main(int argc, char **argv)
 		        //n[strlen(n)-1] = '\0';
 		        // Assign pid_stat with specific pid
 		        int c = sprintf(pid_stat, "/proc/%s/stat",n);
-		        //printf("2.1, App util stat = %s\n",pid_stat);
+		        printf("2.1, App util stat = %s\n",pid_stat);
 		        int m = sprintf(memName, "/proc/%s/statm",n);
-		        //printf("2.2, App mem stat = %s\n",memName);
+		        printf("2.2, App mem stat = %s\n",memName);
 		    }
 
 		    if((fp3_app = fopen(pid_stat,"r")) != NULL)
@@ -311,15 +312,15 @@ int main(int argc, char **argv)
 		        strcpy(save_app[i], buffer_app);
 		        buffer_app[0] = '\0';
 		        fclose(fp3_app);
-		        //printf("3 util app %s \n",save_app[i]);
+		        printf("3 util app %s \n",save_app[i]);
 		    }
-		 else //if AUT is not launched yet
-		 {
+		    else //if AUT is not launched yet
+		    {
 		         buffer_app_null[0] = '0';
 		         buffer_app_null[1] = '\n';
-		            strcpy(save_app[i], buffer_app_null);
-		            buffer_app_null[0] = '\0';
-		 }
+		         strcpy(save_app[i], buffer_app_null);
+		         buffer_app_null[0] = '\0';
+		    }
 
 		    if((fp_mem_app = fopen(memName,"r")) != NULL)
 		    {
@@ -328,7 +329,7 @@ int main(int argc, char **argv)
 		        strcpy(save_mem_app[i],buffer_mem_app);
 		        buffer_mem_app[0] = '\0';
 		        fclose(fp_mem_app);
-		        //printf("4 mem usage app %s \n",save_mem_app[i]);
+		        printf("4 mem usage app %s \n",save_mem_app[i]);
 		   }
 		}
 		else //if AUT is not launched yet
@@ -338,10 +339,10 @@ int main(int argc, char **argv)
 		    strcpy(save_app[i], buffer_app_null);
 		    buffer_app_null[0] = '\0';
 		}
-	}
+	
 
-        if(mode == 1) {
-      
+
+		//total cpu need to sample on both modes
 		///////////////////////////////////// utilization /////////////////////////////////////////
 		if((fp = fopen("/proc/stat","r")) != NULL)
 		{
@@ -363,6 +364,10 @@ int main(int argc, char **argv)
 		    //printf("6 util %s \n",save_util[i]);
 		    fclose(fp);
 		}
+
+        	
+      
+		
 
 	 	
 		//////////////////////////////// frequency 0 /////////////////////////////////////////////
@@ -575,16 +580,48 @@ int main(int argc, char **argv)
 		    buffer_freq_null[0] = '\0';
 		}
 
-        }
-	///////////////////////////////////////// end component sample ///////////////////////////
+	       //Battery
+	       ////////////////////////////////////// temperature /////////////////////////////////////////////////
+	       if((fp_temp = fopen("/sys/class/power_supply/battery/temp","r")) != NULL){
+
+		    fgets(buffer_temp, sizeof buffer_temp, fp_temp);
+		    strcpy(save_temp[i], buffer_temp);
+		    buffer_temp[0] = '\0';
+		    //printf("9.1 temperature %s \n",save_temp[i]);
+		    fclose(fp_temp);
+
+		}
+                else printf("null\n");
+
+	       ////////////////////////////////////// voltage /////////////////////////////////////////////////
+	       if((fp_volt = fopen("/sys/class/power_supply/battery/voltage_now","r")) != NULL){
+
+		    fgets(buffer_volt, sizeof buffer_volt, fp_volt);
+		    strcpy(save_volt[i], buffer_volt);
+		    buffer_volt[0] = '\0';
+		    //printf("9 volt %s \n",save_volt[i]);
+		    fclose(fp_volt);
+
+		}
+
+		////////////////////////////////////// capacity ////////////////////////////////////////////////
+		if((fp_capacity = fopen("/sys/class/power_supply/battery/capacity","r")) != NULL){
+
+		    fgets(buffer_capacity, sizeof buffer_capacity, fp_capacity);
+		    strcpy(save_capacity[i], buffer_capacity);
+		    buffer_capacity[0] = '\0';
+		    //printf("10 capacity %s \n",save_capacity[i]);
+		    fclose(fp_capacity);
+
+		}
 
         usleep(sleep); // ms * 1000
         delay1 += step;
         //printf("sleep = %d, delay1 = %f, i = %d, end = %f \n",timeStamp, sleep, delay1, i, end);
         
-        clock_gettime(CLOCK_REALTIME, &spec);
+        /*clock_gettime(CLOCK_REALTIME, &spec);
         s = spec.tv_sec;
-        ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds
+        ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds*/
             
         //printf("Current time: %"PRIdMAX".%03ld seconds since the Epoch\n", (intmax_t)s, ms);
         
@@ -594,8 +631,7 @@ int main(int argc, char **argv)
         if(delay1 > end) // save at the last time
         {
 
-		if(mode == 1) 
-		{
+		
 		    	 //printf("end\n");
 		    	 fp_util = fopen("/data/local/tmp/stat/cpu_util.txt", "w");
 
@@ -614,7 +650,10 @@ int main(int argc, char **argv)
 			 fp_rx_pk = fopen("/data/local/tmp/stat/wifi_rx_pk.txt", "w");
 			 fp_tx_byte = fopen("/data/local/tmp/stat/wifi_tx_byte.txt", "w");
 			 fp_rx_byte = fopen("/data/local/tmp/stat/wifi_rx_byte.txt", "w");
-			    
+
+ 			 fp_capacity = fopen("/data/local/tmp/stat/capacity.txt","w");
+	    		 fp_volt = fopen("/data/local/tmp/stat/volt.txt","w");
+	    		 fp_temp = fopen("/data/local/tmp/stat/temperature.txt","w");
 		   
 			 int ii = 0;
 			    //printf("i = %d\n",i);
@@ -624,8 +663,8 @@ int main(int argc, char **argv)
 			 for(ii = 0; ii <= i-1; ii++)
 			 {
 		
-				fprintf(fp_util,"%s "         ,         save_util[ii]);
-				   fprintf(fp_freq_0,"%s "         ,         save_freq_0[ii]);
+				fprintf(fp_util,"%s "           ,         save_util[ii]);
+				fprintf(fp_freq_0,"%s "         ,         save_freq_0[ii]);
 				fprintf(fp_freq_1,"%s "         ,         save_freq_1[ii]); //printf("%s\n",save_freq_7[ii]);
 				fprintf(fp_freq_2,"%s "         ,         save_freq_2[ii]);
 				fprintf(fp_freq_3,"%s "         ,         save_freq_3[ii]);
@@ -634,11 +673,16 @@ int main(int argc, char **argv)
 				fprintf(fp_freq_6,"%s "         ,         save_freq_6[ii]);
 				fprintf(fp_freq_7,"%s "         ,         save_freq_7[ii]);
 			       
-				fprintf(fp_mem_total,"%s "         ,         save_mem_total[ii]);
-				fprintf(fp_tx_pk,"%s "         ,         save_tx_pk[ii]);
-				fprintf(fp_rx_pk,"%s "         ,         save_rx_pk[ii]);
-				fprintf(fp_tx_byte,"%s "         ,         save_tx_byte[ii]);
-				fprintf(fp_rx_byte,"%s "         ,         save_rx_byte[ii]);
+				fprintf(fp_mem_total,"%s "      ,         save_mem_total[ii]);
+				fprintf(fp_tx_pk,"%s "          ,         save_tx_pk[ii]);
+				fprintf(fp_rx_pk,"%s "          ,         save_rx_pk[ii]);
+				fprintf(fp_tx_byte,"%s "        ,         save_tx_byte[ii]);
+				fprintf(fp_rx_byte,"%s "        ,         save_rx_byte[ii]);
+
+				//battery
+				fprintf(fp_capacity,"%s "       ,     	save_capacity[ii]);
+                		fprintf(fp_volt,"%s "		, 	save_volt[ii]);
+                		fprintf(fp_temp,"%s "		, 	save_temp[ii]);
 			    }
 
 			 n = NULL;
@@ -657,9 +701,10 @@ int main(int argc, char **argv)
 			 free(save_rx_pk);
 			 free(save_tx_byte);
 			 free(save_rx_byte);	
-		 }
-
-		 if(mode == 2){
+			 fclose(fp_temp);
+            		 fclose(fp_volt);
+            		 fclose(fp_capacity);  
+		
                  
 			 fp_app_util = fopen("/data/local/tmp/stat/cpu_app.txt","w");
 			 fp_uid_snd = fopen("/data/local/tmp/stat/uid_snd.txt","w");
@@ -683,7 +728,7 @@ int main(int argc, char **argv)
 			 free(save_uid_snd);
 			 free(save_uid_rcv);
 	 		 free(save_mem_app);
-		 }
+		
 			
 		 printf("finish record\n");
 
