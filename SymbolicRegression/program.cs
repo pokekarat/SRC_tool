@@ -17,18 +17,19 @@ namespace SymbolicRegression
     public class Config
     {
         public static int DURATION = 100;
-        public static string ROOTPATH = @"C:\ebl";
-        public static string TESTCASE = @"\skype";
-        public static string TESTTIME = @"1";
+        public static int POWEROFFSET = 0; //time after start sampling (seconds)
+        public static string ROOTPATH = @"C:\ebl\";
+        public static string SAVEFOLDER = @"youtube\";
+        public static string SAVETIMES = @"4";
+        public static string POWERMETER = "D:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
 
-        //Nexus S, Galaxy S4
+        //Nexus S, Galaxy S4, Fame, S2
         public static string WIFI = @"/sys/class/net/wlan0/";
 
-        //Example app "com.google.youtube.com";
+        //Example app "com.google.android.youtube";
         public static string APP2TEST = "com.google.android.youtube";
 
-        public static int MODE = 1; //1= train, 2 = test
-        
+        public static double VOLT = 3.7;
     }
 
 
@@ -39,10 +40,10 @@ namespace SymbolicRegression
             Console.WriteLine("Start ...");
 
             //new Measure();
+            //new TimerDemo().processSample();
+            //new TimerDemo().pullFile();
             new TimerDemo().processSample();
-            //Parse p = new Parse(@"C:\Experiment\mtk");
-            //p.process();
-            Console.WriteLine("Complete ...");
+            //Console.WriteLine("Complete ...");
            
             // Console.ReadKey();
         }        
@@ -74,21 +75,20 @@ namespace SymbolicRegression
         public int startTime, stopTime;
 
         string savePath = Config.ROOTPATH;
-        string trainPath = "";
-        string testPath = "";
 
-        public TimerDemo() { }
+        public TimerDemo() {
+            savePath = savePath + Config.SAVEFOLDER + Config.SAVETIMES;
+        }
 
         public TimerDemo(int start, int stop)
         {
 
-            trainPath = savePath + Config.TESTCASE + @"\train\";
-            testPath = savePath + Config.TESTCASE + @"\test\" + Config.TESTTIME;
+            //trainPath = savePath + Config.TESTFOLDER + @"\train\";
+            savePath = savePath + Config.SAVEFOLDER + Config.SAVETIMES;
 
             if (!Directory.Exists(savePath))
             {
-                Directory.CreateDirectory(trainPath);
-                Directory.CreateDirectory(testPath);
+                Directory.CreateDirectory(savePath);
             }
 
             this.startTime = start;
@@ -144,13 +144,11 @@ namespace SymbolicRegression
                     case "1":
                         Thread t1 = new Thread(startSampling);
                         t1.Start();
-                        //t1.Join();
                         break;
 
                     case "10": 
-                        Thread monsoon = new Thread(StartMonsoon);
-                        monsoon.Start();
-                        //Depend on your power measure device.
+                        Console.WriteLine("Start power meter");///Thread monsoon = new Thread(StartMonsoon);
+                        //monsoon.Start();
                         break;
 
                     case "20":
@@ -166,7 +164,7 @@ namespace SymbolicRegression
                         break;
 
                     case "70":
-                        if (Config.APP2TEST == "") Console.WriteLine("Power should stop");
+                        Console.WriteLine("Power should stop");
                         break;
 
                     case "80":
@@ -175,7 +173,8 @@ namespace SymbolicRegression
                         break;
 
                     case "100":
-                        Console.WriteLine("Finish job");
+                        Console.WriteLine("Finish job and process sampling files");
+                        //processSample();
                         break;
 
                     /*  case "330":
@@ -188,27 +187,27 @@ namespace SymbolicRegression
         {
             Console.WriteLine("Start sampling");
             //string path = "/c " + "echo sh -c \"./data/local/tmp/sample 1 60 "+Config.WIFI+" "+Config.APP2TEST+" & \" | adb shell";
-            string path = "/c " + "adb shell ./data/local/tmp/sample 1 60 " + Config.WIFI + " " + Config.APP2TEST + " &";
+            string path = "/c " + "adb shell ./data/local/tmp/sample 1 "+ (Config.DURATION-40) + " " + Config.WIFI + " " + Config.APP2TEST + " &";
             ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", path );
             sample.CreateNoWindow = true;
             sample.UseShellExecute = false;
             sample.RedirectStandardError = true;
             sample.RedirectStandardOutput = true;
             Process process = Process.Start(sample);
+            
         }
 
         public void StartMonsoon()
         {
-            if (Config.MODE == 1)
-            {
+          
                 Console.WriteLine("Start Power sampling");
                 //int measureDuration = 150; //seconds
                 Process powerMonitor = new Process();
-                powerMonitor.StartInfo.FileName = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
-                powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=4.20 /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + trainPath + "\\power.pt4  /TRIGGER=DTXD60A"; //60 seconds
+                powerMonitor.StartInfo.FileName = Config.POWERMETER;
+                powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + "\\power.pt4  /TRIGGER=DTXD"+(Config.DURATION-40)+"A"; //60 seconds
                 powerMonitor.Start();
-                powerMonitor.WaitForExit();
-            }
+                //powerMonitor.WaitForExit();
+           
         }
 
        /* public void startBenchmarkApp()
@@ -224,34 +223,29 @@ namespace SymbolicRegression
         public void pullFile()
         {
             Console.WriteLine("Start Pull files");
-
-            string path = "";
-            if (Config.MODE == 1)
-            {
-                path = trainPath;
-            }
-            else
-            {
-                path = testPath;
-            }
-           
-            ProcessStartInfo pullFile = new ProcessStartInfo("cmd.exe", "/c " + "adb pull /data/local/tmp/stat " + path); 
+            
+            //string path = "/c " + "adb pull /data/local/tmp/stat " + savePath;
+            ProcessStartInfo pullFile = new ProcessStartInfo("cmd.exe", "/c " + "adb pull /data/local/tmp/stat " + savePath); 
             pullFile.CreateNoWindow = true;
             pullFile.UseShellExecute = false;
             pullFile.RedirectStandardError = true;
             pullFile.RedirectStandardOutput = true;
             Process process = Process.Start(pullFile);
+           
+            try
+            {
+                 if(process != null){
+                    process.WaitForExit();
+                }
+            }
+            catch (InvalidOperationException i)
+            {
+
+            }
 
             Console.WriteLine("Finish pull trace file");
 
-            string[] files = Directory.GetFiles(savePath, "*.txt");
-            
-            while (files.Length == 0)
-            {
-                Console.WriteLine("Files are not pulled yet ...");
-                files = Directory.GetFiles(savePath, "*.txt");
-            }
-
+            //Console.ReadKey();
             cleanFile();
             //processSample();
         }
@@ -272,17 +266,17 @@ namespace SymbolicRegression
         public void processSample() 
         {
             Parse p = new Parse();
+            p.folderName = savePath;
+            p.processTrain();
+            p.processTest();
 
-            if (Config.MODE == 1)
+            /*if (Config.SAVETIMES.Equals("1"))
             {
-                p.folderName = Config.ROOTPATH + Config.TESTCASE + @"\train";
                 p.processTrain();
             }
-            else
-            {
-                p.folderName = testPath;
-                p.processTest();
-            }
+            
+            p.processTest();
+            */
         }
     }
 }

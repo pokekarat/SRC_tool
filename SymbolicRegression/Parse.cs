@@ -15,6 +15,7 @@ namespace SymbolicRegression
 
         ArrayList list = new ArrayList();
         public string folderName = "";
+        public static int CPU_cores = 8;
     
         public Parse() { }
 
@@ -67,7 +68,7 @@ namespace SymbolicRegression
 
                 PT4.GetSample(sampleIndex, header.captureDataMask, statusPacket, pt4Reader, ref sample);
                 //powerTable[sample.timeStamp] = sample.mainCurrent;
-                sum += (sample.mainCurrent * 3.7); // * 3.7);//sample.mainVoltage);
+                sum += (sample.mainCurrent * Config.VOLT); // * 3.7);//sample.mainVoltage);
                 int sampleRate = 5000;
                 if (sampleIndex % sampleRate == 0) // 5000 HZ : calculate every 1 second 50 for 100hz
                 {
@@ -105,7 +106,7 @@ namespace SymbolicRegression
 
                     if (freq < 1) freq = 0;
                     //freq = Math.Floor(freq);
-                    rets.Add(freq);
+                    rets.Add(Math.Round(freq,2));
                 }
             }
 
@@ -141,9 +142,49 @@ namespace SymbolicRegression
             return rets;
         }
 
+        public static ArrayList manageCpuApp(String file, String cpu_app_stat)
+        {
+            ArrayList ret = new ArrayList();
+            string[] cpu_app_stats = File.ReadAllLines(file + cpu_app_stat);
+
+            for (int i = 0; i < cpu_app_stats.Length; i++)
+            {
+                if (cpu_app_stats[i] == "") continue;
+
+                if (cpu_app_stats[i].Contains("+++"))
+                {
+                    if (cpu_app_stats[i + 1] == " ")
+                    {
+                        for (int j = 0; j < 8; j++)
+                        {
+                            ret.Add("0");
+                        }
+                        ++i;
+                    }
+                    else
+                    {
+                        int countLine = Parse.CPU_cores;
+                        do
+                        {
+                            ret.Add(cpu_app_stats[i + 1]);
+                            i=i+2;
+                            --countLine;
+                        }
+                        while (cpu_app_stats[i] != " ");
+
+                        for (int k = 0; k < countLine; k++)
+                            ret.Add("0");
+                    }
+                }
+            }
+
+
+            return ret;
+        }
+
         public static ArrayList manageCPUs(String file, String cpu_stat)
         {
-            int core = 8;
+            
 
             ArrayList utils = new ArrayList();
 
@@ -169,11 +210,11 @@ namespace SymbolicRegression
                 }
             }
 
-            for (int t = 0; t < cleanCPUs.Count; t++)
+            /*for (int t = 0; t < cleanCPUs.Count; t++)
             {
                 string line = cleanCPUs[t].ToString();
 
-            }
+            }*/
 
             //////////// add code //////////////////
 
@@ -193,9 +234,9 @@ namespace SymbolicRegression
 
 
             ArrayList arr2 = new ArrayList();
-            for (int i = 0; i < (num * core); i++)
+            for (int i = 0; i < (num * Parse.CPU_cores); i++)
             {
-                arr2.Add("cpu" + (i % core));
+                arr2.Add("cpu" + (i % Parse.CPU_cores));
             }
 
             int x = 0;
@@ -230,7 +271,7 @@ namespace SymbolicRegression
             return arr2;
         }
 
-        public static ArrayList TotalCpuUtilParse(ArrayList cpu)
+        public static ArrayList TotalCpuUtilParse(ArrayList cpu, ArrayList app, ref ArrayList app_utils)
         {
             ArrayList utils = new ArrayList();
 
@@ -242,11 +283,10 @@ namespace SymbolicRegression
             double total_prev = 0;
             double idle_prev = 0;
             double idle_cur = 0;
-            double total_cur = 0;
+            double total_cur = 0;       
+            double uTime_before = 0;
+            double sTime_before = 0;
 
-           
-           // double uTime_before = 0;
-           // double sTime_before = 0;
             for (int i = 0; i < cpu.Count; i++)
             {
 
@@ -276,93 +316,19 @@ namespace SymbolicRegression
                     }
                 }
 
-             
-
                 idle_cur = b[3];
 
                 double diff_idle = idle_cur - idle_prev;
                 double diff_total = total_cur - total_prev;
+              
                 double diff_usage = (1000 * (diff_total - diff_idle) / diff_total) / 10;
 
                 if (double.IsNaN(diff_usage)) diff_usage = 0;
 
-                utils.Add(Math.Round(diff_usage,2));
 
-                idle_prev = idle_cur;
-                total_prev = total_cur;
-                total_cur = 0;
-                util_cur.Clear();
-            }
+                /******** app **********/
 
-            return utils;
-        }
-
-        public static ArrayList utilParse(String file, String cpu_stat, String cpu_app, ref ArrayList apps)
-        {
-
-            ArrayList utils = new ArrayList();
-
-            if (!File.Exists(file + cpu_stat))
-            {
-                return new ArrayList();
-            }
-
-            string[] cpu_stats = File.ReadAllLines(file + cpu_stat);
-            string[] app_stats = File.ReadAllLines(file + cpu_app);
-
-            ArrayList cpu_ar = new ArrayList();
-            ArrayList app_ar = new ArrayList();
-
-            for (int i = 0; i < cpu_stats.Length; i++)
-            {
-                string cpu = cpu_stats[i].Trim();
-                if (!(cpu.Contains("cpu0") || cpu.Contains("cpu1") || cpu == ""))
-                {
-                    cpu_ar.Add(cpu);
-                }
-            }
-
-            for (int j = 0; j < app_stats.Length; j++)
-            {
-                if (string.IsNullOrEmpty(app_stats[j]) || string.IsNullOrWhiteSpace(app_stats[j])) continue;
-                app_ar.Add(app_stats[j].Trim());
-            }
-
-            ArrayList util_prev = new ArrayList();
-            ArrayList util_cur = new ArrayList();
-            double[] a = new double[7];
-            double[] b = new double[7];
-            double total_prev = 0;
-            double idle_prev = 0;
-            double idle_cur = 0;
-            double total_cur = 0;
-
-            double uTime_before = 0;
-            double sTime_before = 0;
-            for (int i = 0; i < cpu_ar.Count; i++)
-            {
-
-                string[] cpu_current = cpu_ar[i].ToString().Split(' ');
-
-                for (int j = 0; j < cpu_current.Length; j++)
-                {
-                    if (!string.IsNullOrEmpty(cpu_current[j]) && cpu_current[j] != "cpu")
-                        util_cur.Add(cpu_current[j]);
-                }
-
-                for (int k = 0; k < 7; k++)
-                {
-                    b[k] = double.Parse(util_cur[k].ToString());
-                    total_cur += b[k];
-                }
-
-                idle_cur = b[3];
-
-                double diff_idle = idle_cur - idle_prev;
-                double diff_total = total_cur - total_prev;
-                double diff_usage = (1000 * (diff_total - diff_idle) / diff_total) / 10;
-
-                string[] appLines = app_ar[i].ToString().Split();
+                string[] appLines = app[i].ToString().Split();
                 double app_util = 0;
                 if (appLines.Length > 1)
                 {
@@ -385,26 +351,69 @@ namespace SymbolicRegression
                 }
                 else
                 {
-                    app_util = -1;
+                    app_util = 0;
                 }
 
-                apps.Add(app_util);
+                app_utils.Add(Math.Round(app_util,2));
 
+               /************************/
 
-
-                utils.Add(diff_usage);
+                utils.Add(Math.Round(diff_usage,2));
 
                 idle_prev = idle_cur;
                 total_prev = total_cur;
                 total_cur = 0;
                 util_cur.Clear();
-
-                //  wrt.WriteLine(diff_usage);
             }
 
-            //wrt.Close();
-
             return utils;
+        }
+
+        public static ArrayList wifiParseApp(String folder)
+        {
+            string file = folder;
+            //string rx = folder + @"\wifi_rx.txt";
+
+            string[] data = File.ReadAllLines(file);
+            ArrayList cleanData = new ArrayList();
+            //Clean data
+            for (int d = 0; d < data.Length; d++)
+            {
+                if (String.IsNullOrWhiteSpace(data[d]) || String.IsNullOrEmpty(data[d])) continue;
+                cleanData.Add(data[d]);
+            }
+            
+            
+            ArrayList rets = new ArrayList();
+
+            string currIndex = ""; // cleanData[0].ToString();
+            string nextIndex = ""; // cleanData[1].ToString();
+            for (int i = 0; i < cleanData.Count-1; i++)
+            {
+                currIndex = cleanData[i].ToString();
+                nextIndex = cleanData[i + 1].ToString();
+
+                if (currIndex.Contains("+++"))
+                {
+                    if (nextIndex.Contains("+++"))
+                    {
+                        rets.Add("0");
+                    }
+                    else
+                    {
+                        rets.Add(nextIndex);
+                    }
+                }
+            }
+
+            ArrayList rets2 = new ArrayList();
+         
+            for (int j = 0; j < rets.Count; j++)
+            {
+                rets2.Add(int.Parse(rets[j].ToString())/1000);
+            }
+
+            return rets2;
         }
 
         public static ArrayList wifiParse(String folder)
@@ -429,13 +438,49 @@ namespace SymbolicRegression
             
             return rets;
         }
-      
+
+        public static ArrayList wifiParse2(String folder)
+        {
+            string file = folder;
+            //string rx = folder + @"\wifi_rx.txt";
+
+            string[] data = File.ReadAllLines(file);
+            ArrayList rets = new ArrayList();
+
+        
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                if (string.IsNullOrEmpty(data[i]) || string.IsNullOrWhiteSpace(data[i])) continue;
+
+              
+                rets.Add(int.Parse(data[i])/1000);
+               
+            }
+
+
+            return rets;
+        }
+
+        public static ArrayList appFreq(ArrayList freqs, ArrayList app_utils)
+        {
+            ArrayList rets = new ArrayList();
+            for (int i = 0; i < freqs.Count; i++)
+            {
+                double fVal = double.Parse(freqs[i].ToString());
+                double aUtil = double.Parse(app_utils[i].ToString());
+                rets.Add(Math.Round(fVal * (aUtil / 100),2)); 
+            }
+            return rets;
+        }
+
         public void processTrain()
         {
-           // ArrayList appCpu = new ArrayList();
+            // ArrayList appCpu = new ArrayList();
             //ArrayList utils = TotalCpuUtilParse(this.folderName, @"\cpu_util.txt", @"\cpu_app.txt", ref appCpu);
             
             ArrayList arr = manageCPUs(this.folderName, @"\cpu_util.txt");
+            ArrayList arr_app = manageCpuApp(this.folderName, @"\cpu_app.txt");
 
             ArrayList cpu_ar1 = new ArrayList();
             ArrayList cpu_ar2 = new ArrayList();
@@ -445,6 +490,15 @@ namespace SymbolicRegression
             ArrayList cpu_ar6 = new ArrayList();
             ArrayList cpu_ar7 = new ArrayList();
             ArrayList cpu_ar8 = new ArrayList();
+
+            ArrayList cpu_app_ar1 = new ArrayList();
+            ArrayList cpu_app_ar2 = new ArrayList();
+            ArrayList cpu_app_ar3 = new ArrayList();
+            ArrayList cpu_app_ar4 = new ArrayList();
+            ArrayList cpu_app_ar5 = new ArrayList();
+            ArrayList cpu_app_ar6 = new ArrayList();
+            ArrayList cpu_app_ar7 = new ArrayList();
+            ArrayList cpu_app_ar8 = new ArrayList();
 
             for (int i = 0; i < arr.Count; i += 8)
             {
@@ -456,17 +510,36 @@ namespace SymbolicRegression
                 cpu_ar6.Add(arr[i + 5]);
                 cpu_ar7.Add(arr[i + 6]);
                 cpu_ar8.Add(arr[i + 7]);
+
+                cpu_app_ar1.Add(arr_app[i]);
+                cpu_app_ar2.Add(arr_app[i+1]);
+                cpu_app_ar3.Add(arr_app[i+2]);
+                cpu_app_ar4.Add(arr_app[i+3]);
+                cpu_app_ar5.Add(arr_app[i+4]);
+                cpu_app_ar6.Add(arr_app[i+5]);
+                cpu_app_ar7.Add(arr_app[i+6]);
+                cpu_app_ar8.Add(arr_app[i+7]);
             }
 
-            ArrayList cpu1_utils = TotalCpuUtilParse(cpu_ar1);
-            ArrayList cpu2_utils = TotalCpuUtilParse(cpu_ar2);
-            ArrayList cpu3_utils = TotalCpuUtilParse(cpu_ar3);
-            ArrayList cpu4_utils = TotalCpuUtilParse(cpu_ar4);
-            ArrayList cpu5_utils = TotalCpuUtilParse(cpu_ar4);
-            ArrayList cpu6_utils = TotalCpuUtilParse(cpu_ar4);
-            ArrayList cpu7_utils = TotalCpuUtilParse(cpu_ar4);
-            ArrayList cpu8_utils = TotalCpuUtilParse(cpu_ar4);
+            ArrayList cpu1_app_utils = new ArrayList();
+            ArrayList cpu2_app_utils = new ArrayList();
+            ArrayList cpu3_app_utils = new ArrayList();
+            ArrayList cpu4_app_utils = new ArrayList();
+            ArrayList cpu5_app_utils = new ArrayList();
+            ArrayList cpu6_app_utils = new ArrayList();
+            ArrayList cpu7_app_utils = new ArrayList();
+            ArrayList cpu8_app_utils = new ArrayList();
 
+            ArrayList cpu1_utils = TotalCpuUtilParse(cpu_ar1, cpu_app_ar1, ref cpu1_app_utils);
+            ArrayList cpu2_utils = TotalCpuUtilParse(cpu_ar2, cpu_app_ar2, ref cpu2_app_utils);
+            ArrayList cpu3_utils = TotalCpuUtilParse(cpu_ar3, cpu_app_ar3, ref cpu3_app_utils);
+            ArrayList cpu4_utils = TotalCpuUtilParse(cpu_ar4, cpu_app_ar4, ref cpu4_app_utils);
+            ArrayList cpu5_utils = TotalCpuUtilParse(cpu_ar5, cpu_app_ar5, ref cpu5_app_utils);
+            ArrayList cpu6_utils = TotalCpuUtilParse(cpu_ar6, cpu_app_ar6, ref cpu6_app_utils);
+            ArrayList cpu7_utils = TotalCpuUtilParse(cpu_ar7, cpu_app_ar7, ref cpu7_app_utils);
+            ArrayList cpu8_utils = TotalCpuUtilParse(cpu_ar8, cpu_app_ar8, ref cpu8_app_utils);
+
+      
             ArrayList freqs1 = FreqParse(this.folderName + @"\freq0.txt");
             ArrayList freqs2 = FreqParse(this.folderName + @"\freq1.txt");
             ArrayList freqs3 = FreqParse(this.folderName + @"\freq2.txt");
@@ -476,44 +549,92 @@ namespace SymbolicRegression
             ArrayList freqs7 = FreqParse(this.folderName + @"\freq6.txt");
             ArrayList freqs8 = FreqParse(this.folderName + @"\freq7.txt");
 
-            ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
+            ArrayList appFreq1 = appFreq(freqs1, cpu1_app_utils);
+            ArrayList appFreq2 = appFreq(freqs2, cpu2_app_utils);
+            ArrayList appFreq3 = appFreq(freqs3, cpu3_app_utils);
+            ArrayList appFreq4 = appFreq(freqs4, cpu4_app_utils);
+            ArrayList appFreq5 = appFreq(freqs5, cpu5_app_utils);
+            ArrayList appFreq6 = appFreq(freqs6, cpu6_app_utils);
+            ArrayList appFreq7 = appFreq(freqs7, cpu7_app_utils);
+            ArrayList appFreq8 = appFreq(freqs8, cpu8_app_utils);
+
+            //ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
 
             ArrayList rx_pks = wifiParse(this.folderName + @"\wifi_rx_pk.txt");
-            ArrayList rx_bytes = wifiParse(this.folderName + @"\wifi_rx_byte.txt");
+            ArrayList rx_bytes = wifiParse2(this.folderName + @"\wifi_rx_byte.txt");
             ArrayList tx_pks = wifiParse(this.folderName + @"\wifi_tx_pk.txt");
-            ArrayList tx_bytes = wifiParse(this.folderName + @"\wifi_tx_byte.txt");
+            ArrayList tx_bytes = wifiParse2(this.folderName + @"\wifi_tx_byte.txt");
 
-            ArrayList powers = PowerParse(this.folderName);
+            ArrayList uid_rcvs = wifiParseApp(this.folderName + @"\uid_rcv.txt");
+            ArrayList uid_snds = wifiParseApp(this.folderName + @"\uid_snd.txt");
+
+            ArrayList powers = new ArrayList(cpu1_utils.Count);//PowerParse(this.folderName);
+            for (int i = 0; i < powers.Count; i++)
+                powers[i] = 0;
             
             TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
-            tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 mem bright rx_pk rx_byte tx_pk tx_byte power");
+            tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk rx_byte tx_pk tx_byte power");
 
             int numSample = cpu1_utils.Count;
 
-            int matchTimeAndPower = 10;
+            //Use Config
+            int matchTimeAndPower = Config.POWEROFFSET;
             
             for (int s = matchTimeAndPower; s < numSample; s++)
             {
                 string dataLine = cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + cpu5_utils[s] + " " + cpu6_utils[s] + " " + cpu7_utils[s] + " " + cpu8_utils[s] + " "
                                   + freqs1[s] + " " + freqs2[s] + " " + freqs3[s] + " " + freqs4[s] + " " + freqs5[s] + " " + freqs6[s] + " " + freqs7[s] + " " + freqs8[s] + " "
-                                  + mems[s] + " " + "255" + " "
+                                  + " " + "255" + " "
                                   + rx_pks[s] + " " + rx_bytes[s] + " " + tx_pks[s] + " " + tx_bytes[s] + " "
-                                  + powers[(s - matchTimeAndPower)+2]; // we skip first two sampling power as it causes by start monsoon.
+                                  + "0"; // powers[(s - matchTimeAndPower) + 2]; // we skip first two sampling power as it causes by start monsoon.
 
                 tw.WriteLine(dataLine);
             }
 
             tw.Close();
-            
+
+            TextWriter tw2 = new StreamWriter(this.folderName + @"\test.txt");
+            tw2.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright tx_byte rx_byte");
+
+            for (int t = 0; t < numSample; t++)
+            {
+                tw2.WriteLine(
+                        cpu1_app_utils[t] + " " +
+                        cpu2_app_utils[t] + " " +
+                        cpu3_app_utils[t] + " " +
+                        cpu4_app_utils[t] + " " +
+                        cpu5_app_utils[t] + " " +
+                        cpu6_app_utils[t] + " " +
+                        cpu7_app_utils[t] + " " +
+                        cpu8_app_utils[t] + " " +
+                        appFreq1[t] + " " +
+                        appFreq2[t] + " " +
+                        appFreq3[t] + " " +
+                        appFreq4[t] + " " +
+                        appFreq5[t] + " " +
+                        appFreq6[t] + " " +
+                        appFreq7[t] + " " +
+                        appFreq8[t] + " " +
+                        255 + " " +
+                        uid_snds[t] + " " +
+                        uid_rcvs[t]               
+                    );
+            }
+
+            tw2.Close();
+
             Console.WriteLine("Processing complete");
-            Console.ReadKey();
+           //Console.ReadKey();
         }
 
 
         public void processTest()
         {
-            ArrayList uid_rcvs = wifiParse(this.folderName + @"\uid_rcv.txt");
-            ArrayList uid_snds = wifiParse(this.folderName + @"\uid_snd.txt");
+            //cpu_app
+            //cpu_freq
+           
+            ArrayList uid_rcvs = wifiParseApp(this.folderName + @"\uid_rcv.txt");
+            ArrayList uid_snds = wifiParseApp(this.folderName + @"\uid_snd.txt");
         }
     }
 }
