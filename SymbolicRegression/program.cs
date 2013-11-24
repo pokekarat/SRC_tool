@@ -39,10 +39,10 @@ namespace SymbolicRegression
         {
             Console.WriteLine("Start ...");
 
-            //new Measure();
+            new Measure();
             //new TimerDemo().processSample();
             //new TimerDemo().pullFile();
-            new TimerDemo().processSample();
+            //new TimerDemo().processSample();
             //Console.WriteLine("Complete ...");
            
             // Console.ReadKey();
@@ -174,7 +174,7 @@ namespace SymbolicRegression
 
                     case "100":
                         Console.WriteLine("Finish job and process sampling files");
-                        //processSample();
+                        processSample();
                         break;
 
                     /*  case "330":
@@ -247,7 +247,7 @@ namespace SymbolicRegression
 
             //Console.ReadKey();
             cleanFile();
-            //processSample();
+           
         }
 
         public void cleanFile()
@@ -268,15 +268,7 @@ namespace SymbolicRegression
             Parse p = new Parse();
             p.folderName = savePath;
             p.processTrain();
-            p.processTest();
-
-            /*if (Config.SAVETIMES.Equals("1"))
-            {
-                p.processTrain();
-            }
-            
-            p.processTest();
-            */
+          
         }
     }
 }

@@ -626,15 +626,5 @@ namespace SymbolicRegression
             Console.WriteLine("Processing complete");
            //Console.ReadKey();
         }
-
-
-        public void processTest()
-        {
-            //cpu_app
-            //cpu_freq
-           
-            ArrayList uid_rcvs = wifiParseApp(this.folderName + @"\uid_rcv.txt");
-            ArrayList uid_snds = wifiParseApp(this.folderName + @"\uid_snd.txt");
-        }
     }
 }
