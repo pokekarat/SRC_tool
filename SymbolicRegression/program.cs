@@ -17,10 +17,10 @@ namespace SymbolicRegression
     public class Config
     {
         public static int DURATION = 100;
-        public static int POWEROFFSET = 0; //time after start sampling (seconds)
+        public static int POWEROFFSET = 10; //time after start sampling (seconds)
         public static string ROOTPATH = @"C:\ebl\";
         public static string SAVEFOLDER = @"skype\";
-        public static string SAVETIMES = @"2";
+        public static string SAVETIMES = @"6";
         public static string POWERMETER = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
 
         //Nexus S, Galaxy S4, Fame, S2
@@ -40,8 +40,8 @@ namespace SymbolicRegression
         {
             Console.WriteLine("Start ...");
 
-            new Measure();
-            //new TimerDemo().processSample();
+            //new Measure();
+            new TimerDemo().processSample();
             //new TimerDemo().pullFile();
             //new TimerDemo().processSample();
             //Console.WriteLine("Complete ...");
@@ -83,6 +83,7 @@ namespace SymbolicRegression
 
         public TimerDemo(int start, int stop)
         {
+            chkBusybox();
 
             cleanFile();
 
@@ -111,6 +112,46 @@ namespace SymbolicRegression
             lbTime.Height = 180;
             lbTime.Location = new Point(20, 20);
             lbTime.Text = GetTime();
+        }
+
+        private static void chkBusybox()
+        {
+            //Check whether busybox exists in /data/local/tmp/ or not.
+            ProcessStartInfo chkBusybox = new ProcessStartInfo("cmd.exe", "/c " + "adb shell ls /data/local/tmp/busybox > "+ Config.ROOTPATH +"check.txt");
+            chkBusybox.CreateNoWindow = true;
+            chkBusybox.UseShellExecute = false;
+            chkBusybox.RedirectStandardError = true;
+            chkBusybox.RedirectStandardOutput = true;
+            Process process = Process.Start(chkBusybox);
+            process.WaitForExit();
+
+            while (!File.Exists(Config.ROOTPATH + "check.txt")) { Console.WriteLine("Wait check.txt to save"); }
+
+            string[] data = File.ReadAllLines(Config.ROOTPATH+"check.txt");
+            if (data[0].Contains("No such file"))
+            {
+                Console.WriteLine("set up busybox");
+                //Add busybox and then chmod to 777
+                ProcessStartInfo pushBusybox = new ProcessStartInfo("cmd.exe", "/c " + "adb push "+ Config.ROOTPATH +"busybox /data/local/tmp/");
+                pushBusybox.CreateNoWindow = true;
+                pushBusybox.UseShellExecute = false;
+                pushBusybox.RedirectStandardError = true;
+                pushBusybox.RedirectStandardOutput = true;
+                Process process2 = Process.Start(pushBusybox);
+                process2.WaitForExit();
+
+                //Add busybox and then chmod to 777
+                ProcessStartInfo modeBusybox = new ProcessStartInfo("cmd.exe", "/c " + "adb shell chmod 777 /data/local/tmp/busybox");
+                modeBusybox.CreateNoWindow = true;
+                modeBusybox.UseShellExecute = false;
+                modeBusybox.RedirectStandardError = true;
+                modeBusybox.RedirectStandardOutput = true;
+                Process process3 = Process.Start(modeBusybox);
+                process3.WaitForExit();
+            }
+
+            Console.WriteLine("Success busybox");
+
         }
 
         public string GetTime()
@@ -171,7 +212,11 @@ namespace SymbolicRegression
                         Console.WriteLine("Power should stop");
                         break;
 
-                    case "80":
+                    case "75":
+                        Console.WriteLine("test");
+                        break;
+
+                    case "90":
                         Thread t2 = new Thread(pullFile);
                         t2.Start();
                         break;
@@ -191,8 +236,9 @@ namespace SymbolicRegression
         {
             Console.WriteLine("Start sampling");
             //string path = "/c " + "echo sh -c \"./data/local/tmp/sample 1 60 "+Config.WIFI+" "+Config.APP2TEST+" & \" | adb shell";
-            string path = "/c " + "adb shell ./data/local/tmp/sample 1 "+ (Config.DURATION-40) + " " + Config.WIFI + " " + Config.APP2TEST + " &";
-            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", path );
+            //string path = "/c " + "adb shell ./data/local/tmp/sample 1 "+ (Config.DURATION-40) + " " + Config.WIFI + " " + Config.APP2TEST + " &";
+            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "echo sh -c \"./data/local/tmp/sample 1 " + (Config.DURATION-40) + " " + Config.WIFI + " " +Config.APP2TEST+ " &\" | adb shell");           
+            //ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", path );
             sample.CreateNoWindow = true;
             sample.UseShellExecute = false;
             sample.RedirectStandardError = true;
@@ -210,7 +256,7 @@ namespace SymbolicRegression
                 powerMonitor.StartInfo.FileName = Config.POWERMETER;
                 powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + "\\power.pt4  /TRIGGER=DTXD"+(Config.DURATION-40)+"A"; //60 seconds
                 powerMonitor.Start();
-                //powerMonitor.WaitForExit();
+                powerMonitor.WaitForExit();
            
         }
 
@@ -263,7 +309,7 @@ namespace SymbolicRegression
           rmFile.RedirectStandardError = true;
           rmFile.RedirectStandardOutput = true;
           Process process2 = Process.Start(rmFile);
-          Console.WriteLine("Finish delete files");
+          Console.WriteLine("Finish clean files in /data/local/tmp/stat");
           
         }
 
