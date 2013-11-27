@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Eureqa;
 using System.Threading;
+using System.IO;
 
 namespace BasicClient
 {
@@ -42,13 +43,30 @@ namespace BasicClient
             using (DataSet data = new DataSet())
             {
                 string sourcePath = args[0];
+
+                //clean data
+                string[] datas = File.ReadAllLines(sourcePath);
+                string headLine = datas[0];
+                string newHeadlLine = headLine.Replace('"',' ');
+                TextWriter tw = new StreamWriter(sourcePath);
+                tw.WriteLine(newHeadlLine);
+
+                for (int i = 1; i < datas.Length; i++)
+                {
+                    tw.WriteLine(datas[i]);
+                }
+                tw.Close();
+
                 if (!data.import_ascii(sourcePath))
                 {
                     throw new ArgumentException("Unable to import this file");
                 }
+
                 Console.WriteLine("Data imported successfully");
                 Console.WriteLine(data.summary());
-                using (SearchOptions options = new SearchOptions("power = f(util,freq,lcd,mem)"))
+                
+                string model = args[2];
+                using (SearchOptions options = new SearchOptions(model))
                 {
                     
                     Console.WriteLine("> Setting the search options");
@@ -109,7 +127,7 @@ namespace BasicClient
                             {
                                 using (SolutionFrontier bestSolutions = new SolutionFrontier())
                                 {
-                                    int count = 5;
+                                    int count = 10000;
                                     while (conn.query_progress(progress))
                                     {
                                         Console.WriteLine("> " + progress.summary());
