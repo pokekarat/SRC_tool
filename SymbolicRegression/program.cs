@@ -19,15 +19,16 @@ namespace SymbolicRegression
         public static int DURATION = 100;
         public static int POWEROFFSET = 0; //time after start sampling (seconds)
         public static string ROOTPATH = @"C:\ebl\";
-        public static string SAVEFOLDER = @"youtube\";
-        public static string SAVETIMES = @"4";
-        public static string POWERMETER = "D:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
+        public static string SAVEFOLDER = @"skype\";
+        public static string SAVETIMES = @"2";
+        public static string POWERMETER = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
 
         //Nexus S, Galaxy S4, Fame, S2
         public static string WIFI = @"/sys/class/net/wlan0/";
 
         //Example app "com.google.android.youtube";
-        public static string APP2TEST = "com.google.android.youtube";
+        //com.skype.raider
+        public static string APP2TEST = "com.skype.raider";
 
         public static double VOLT = 3.7;
     }
@@ -82,6 +83,8 @@ namespace SymbolicRegression
 
         public TimerDemo(int start, int stop)
         {
+
+            cleanFile();
 
             //trainPath = savePath + Config.TESTFOLDER + @"\train\";
             savePath = savePath + Config.SAVEFOLDER + Config.SAVETIMES;
@@ -147,8 +150,9 @@ namespace SymbolicRegression
                         break;
 
                     case "10": 
-                        Console.WriteLine("Start power meter");///Thread monsoon = new Thread(StartMonsoon);
-                        //monsoon.Start();
+                        Console.WriteLine("Start power meter");
+                        Thread monsoon = new Thread(StartMonsoon);
+                        monsoon.Start();
                         break;
 
                     case "20":
@@ -246,7 +250,7 @@ namespace SymbolicRegression
             Console.WriteLine("Finish pull trace file");
 
             //Console.ReadKey();
-            cleanFile();
+            //cleanFile();
            
         }
 

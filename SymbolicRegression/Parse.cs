@@ -572,7 +572,7 @@ namespace SymbolicRegression
             for (int i = 0; i < powers.Count; i++)
                 powers[i] = 0;
             
-            TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
+            TextWriter tw = new StreamWriter(this.folderName + @"\sample\sample.txt");
             tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk rx_byte tx_pk tx_byte power");
 
             int numSample = cpu1_utils.Count;
