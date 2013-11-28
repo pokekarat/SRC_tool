@@ -42,8 +42,8 @@ namespace SymbolicRegression
         {
             Console.WriteLine("Start ...");
 
-            //new Measure();
-            new TimerDemo().processSample();
+            new Measure();
+            //new TimerDemo().processSample();
             //new TimerDemo().pullFile();
             //new TimerDemo().processSample();
             //Console.WriteLine("Complete ...");
@@ -324,9 +324,9 @@ namespace SymbolicRegression
 
         public void processSample() 
         {
-           /* Parse p = new Parse();
+            Parse p = new Parse();
             p.folderName = savePath;
-            p.processTrain(); */
+            p.processTrain(); 
 
             if (Config.SAVETIMES.Equals("5"))
             {
