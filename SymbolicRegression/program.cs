@@ -42,10 +42,9 @@ namespace SymbolicRegression
         {
             Console.WriteLine("Start ...");
 
-            new Measure();
-            //new TimerDemo().processSample();
+            //new Measure();
             //new TimerDemo().pullFile();
-            //new TimerDemo().processSample();
+            new TimerDemo().processSample();
             //Console.WriteLine("Complete ...");
            
             Console.ReadKey();
@@ -324,13 +323,13 @@ namespace SymbolicRegression
 
         public void processSample() 
         {
-            Parse p = new Parse();
+            /*Parse p = new Parse();
             p.folderName = savePath;
-            p.processTrain(); 
+            p.processTrain(); */
 
             if (Config.SAVETIMES.Equals("5"))
             {
-                AsynProcess();
+               // AsynProcess();
 
                 Eureqa modelProcss = new Eureqa();
                 string model = "power = f(cpu1,cpu2,cpu3,cpu4,cpu5,cpu6,cpu7,cpu8,freq1,freq2,freq3,freq4,freq5,freq6,freq7,freq8,bright,rx_pk,rx_byte,tx_pk,tx_byte)";

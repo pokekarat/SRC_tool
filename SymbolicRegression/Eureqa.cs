@@ -5,6 +5,7 @@ using System.Text;
 using Eureqa;
 using System.Threading;
 using System.IO;
+using System.Collections;
 
 namespace SymbolicRegression
 {
@@ -67,12 +68,15 @@ namespace SymbolicRegression
                 Console.WriteLine("Data imported successfully");
                 Console.WriteLine(data.summary());
 
-                string model = srcModel;
+                string model =  srcModel;
                 using (SearchOptions options = new SearchOptions(model))
                 {
 
                     Console.WriteLine("> Setting the search options");
-                    Console.WriteLine(options.summary());
+                    for (int i = 0; i < options.building_blocks_.Count; i++)
+                    {
+                        Console.WriteLine(options.building_blocks_[i]);
+                    }
                     using (Connection conn = new Connection())
                     {
                         try
@@ -125,11 +129,14 @@ namespace SymbolicRegression
                             else HandleLastResult(conn, "Start command sent");
 
                             Console.WriteLine("> Monitoring the search progress");
+                            Dictionary<float, float> fitSize = new Dictionary<float, float>();
+                            ArrayList models = new ArrayList();
+
                             using (SearchProgress progress = new SearchProgress())
                             {
                                 using (SolutionFrontier bestSolutions = new SolutionFrontier())
                                 {
-                                    int count = 10000;
+                                    int c = 0;       
                                     while (conn.query_progress(progress))
                                     {
                                         Console.WriteLine("> " + progress.summary());
@@ -137,19 +144,21 @@ namespace SymbolicRegression
                                         {
                                             if (bestSolutions.add(solution))
                                             {
-                                                Console.WriteLine("New solution found:");
-                                                Console.WriteLine(solution);
+                                                Console.Write("New solution found:");
+                                                Console.WriteLine(solution.text_);
                                             }
+
+                                            Console.WriteLine(" >> fitness >> " + solution.fitness_ + " >> size " + solution.complexity_ + " equation " + solution.text_);
+                                            fitSize[solution.fitness_] = solution.complexity_;
+                                            models.Add(solution.text_);
                                         }
-                                        Console.WriteLine();
-                                        Console.WriteLine(bestSolutions.to_string());
-                                        Console.WriteLine();
-                                        Thread.Sleep(new TimeSpan(0, 0, 1));
-                                        --count;
-                                        if (count < 0)
-                                        {
-                                            break;
-                                        }
+                                        //Console.WriteLine();
+                                        //Console.WriteLine(bestSolutions.to_string());
+                                        //Console.WriteLine();
+                                        //Thread.Sleep(new TimeSpan(0, 0, 1));
+                                        ++c;
+                                        if (c > 50000) break;
+                                       
                                     }
                                 }
                             }
