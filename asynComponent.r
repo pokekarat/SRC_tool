@@ -9,7 +9,19 @@ if(!is.element("apcluster", installed.packages()[,1]))
 	print("apcluster already installed.")
 }
 
-require("apcluster")
+if(!is.element("Rcpp", installed.packages()[,1]))
+{
+	local({r <- getOption("repos")
+		r["CRAN"] <- "http://cran.csie.ntu.edu.tw/"
+		options(repos=r)})
+	install.packages("Rcpp")
+
+}else{ 
+	print("Rcpp already installed.")
+}
+
+require(apcluster)
+require(Rcpp)
 #print(commandArgs(TRUE)[1])
 
 path   <- commandArgs(TRUE)[1] #"C:\\Users\\USER\\Documents\\GitHub\\SRC_tool\\"

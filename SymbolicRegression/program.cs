@@ -20,8 +20,10 @@ namespace SymbolicRegression
         public static int POWEROFFSET = 10; //time after start sampling (seconds)
         public static string ROOTPATH = @"C:\ebl\";
         public static string SAVEFOLDER = @"skype\";
-        public static string SAVETIMES = @"6";
+        public static string SAVETIMES = @"5";
         public static string POWERMETER = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
+        public static string SRC_TOOL_PATH =  "C:\\Users\\pok\\Documents\\GitHub\\SRC_tool\\";
+        public static string IP_EUREQA_SERVER = "140.113.88.194";
 
         //Nexus S, Galaxy S4, Fame, S2
         public static string WIFI = @"/sys/class/net/wlan0/";
@@ -46,7 +48,7 @@ namespace SymbolicRegression
             //new TimerDemo().processSample();
             //Console.WriteLine("Complete ...");
            
-            // Console.ReadKey();
+            Console.ReadKey();
         }        
     }
 
@@ -235,10 +237,7 @@ namespace SymbolicRegression
         public void startSampling()
         {
             Console.WriteLine("Start sampling");
-            //string path = "/c " + "echo sh -c \"./data/local/tmp/sample 1 60 "+Config.WIFI+" "+Config.APP2TEST+" & \" | adb shell";
-            //string path = "/c " + "adb shell ./data/local/tmp/sample 1 "+ (Config.DURATION-40) + " " + Config.WIFI + " " + Config.APP2TEST + " &";
             ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "echo sh -c \"./data/local/tmp/sample 1 " + (Config.DURATION-40) + " " + Config.WIFI + " " +Config.APP2TEST+ " &\" | adb shell");           
-            //ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", path );
             sample.CreateNoWindow = true;
             sample.UseShellExecute = false;
             sample.RedirectStandardError = true;
@@ -260,15 +259,7 @@ namespace SymbolicRegression
            
         }
 
-       /* public void startBenchmarkApp()
-        {
-            ProcessStartInfo bApp = new ProcessStartInfo("cmd.exe", "/c " + "adb shell am start -n edu.umich.PowerTutor/edu.umich.PowerTutor.ui.UMLogger"); //25 mins
-            bApp.CreateNoWindow = true;
-            bApp.UseShellExecute = false;
-            bApp.RedirectStandardError = true;
-            bApp.RedirectStandardOutput = true;
-            Process process = Process.Start(bApp);
-        } */
+     
 
         public void pullFile()
         {
@@ -295,8 +286,6 @@ namespace SymbolicRegression
 
             Console.WriteLine("Finish pull trace file");
 
-            //Console.ReadKey();
-            //cleanFile();
            
         }
 
@@ -313,12 +302,42 @@ namespace SymbolicRegression
           
         }
 
+        public void AsynProcess()
+        {
+            Console.WriteLine("Start async processing...");
+
+            //Build power model in folder 1
+            ProcessStartInfo asynProc = new ProcessStartInfo("cmd.exe", "/c " + "Rscript " + Config.SRC_TOOL_PATH + "asynComponent.r " + Config.ROOTPATH + Config.SAVEFOLDER + @"1\");
+            asynProc.CreateNoWindow = true;
+            asynProc.UseShellExecute = false;
+            asynProc.RedirectStandardError = true;
+            asynProc.RedirectStandardOutput = true;
+            Process process2 = Process.Start(asynProc);
+
+            if (process2 != null)
+            {
+                process2.WaitForExit();
+            }
+
+            Console.WriteLine("Finish async processing...");
+        }
+
         public void processSample() 
         {
-            Parse p = new Parse();
+           /* Parse p = new Parse();
             p.folderName = savePath;
-            p.processTrain();
-          
+            p.processTrain(); */
+
+            if (Config.SAVETIMES.Equals("5"))
+            {
+                AsynProcess();
+
+                Eureqa modelProcss = new Eureqa();
+                string model = "power = f(cpu1,cpu2,cpu3,cpu4,cpu5,cpu6,cpu7,cpu8,freq1,freq2,freq3,freq4,freq5,freq6,freq7,freq8,bright,rx_pk,rx_byte,tx_pk,tx_byte)";
+                modelProcss.Run(Config.ROOTPATH + Config.SAVEFOLDER + @"1\modifyPower.txt", model, Config.IP_EUREQA_SERVER);
+            }
         }
+
+        
     }
 }
