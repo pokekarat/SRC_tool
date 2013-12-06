@@ -16,36 +16,23 @@
 
 int main(int argc, char **argv)
 {
-    if(argc < 3)
+    if(argc < 5)
     {
-        printf("Please specify [sample rate (Hz)] [duration (secs)] [wifi-path] [packagename], e.g., 1 100 /sys/class/net/wlan0/ com.android.google.youtube \n");
+        printf("Please specify [sample rate (Hz)] [duration (secs)] [wifi-path] [packagename] , e.g., 1 100 /sys/class/net/wlan0/ com.google.android.youtube \n");
         exit(-1);
     }
 
+    char wifiPath[1024];
+    char packageName[1024];
+    
     float sampleRate            =         atof(argv[1]);         //printf("sampleRate %f\n", sampleRate);
     float duration              =         atof(argv[2]); 	 //printf("duration %f\n", duration);
+    strcpy(wifiPath, argv[3]);
+    strcpy(packageName, argv[4]);
+
     float nrows                 =         duration * sampleRate;      //printf("nrows %f\n", nrows);
     int sleep                   =         (int)(1000000.0f / sampleRate);       // printf("sleep %d\n",sleep);
     
-    char packageName[1024];
-    char wifiPath[1024];    
-    printf("input data\n");
-    if(argc == 3) //default
-    {
-    	strcpy(wifiPath, "/sys/class/net/wlan0/");
-        strcpy(packageName, "");
-    }
-    else if(argc == 4)
-    {
-    	strcpy(wifiPath, argv[3]);
-	strcpy(packageName, "");
-    }
-    else if(argc == 5)
-    {
-    	strcpy(wifiPath, argv[3]);
-	strcpy(packageName, argv[4]);
-    }
-
     char txPack[1024];
     char rxPack[1024];
     char txByte[1024];
@@ -119,6 +106,8 @@ int main(int argc, char **argv)
     char buffer_mem_total[size];
     char buffer_mem_app[size];
     char buffer_null[2];
+    buffer_null[0] = '0';
+    buffer_null[1] = '\n';
 
     char buffer_capacity[size];
     char buffer_volt[size];
@@ -216,24 +205,18 @@ int main(int argc, char **argv)
     printf("start sample..\n");
 
     int nProcs = 0;
+    char appTest[1024];
     while(i < nrows)
     {
  		// >> for append, > for overwrite.
-		if(strlen(packageName) != 0)
+		
+		sprintf(aut,"ps | /data/local/tmp/busybox grep %s > /data/local/tmp/tmp_aut", packageName);
+                system(aut);
+	
+		fp_proc = fopen("/data/local/tmp/tmp_aut", "r");
+		if(fp_proc != NULL)
 		{
-			//printf("package len %d \n", strlen(packageName));
-		        sprintf(aut,"ps | grep %s > /data/local/tmp/tmp_aut", packageName);
-                        system(aut);
-			printf("%s\n",aut);
-
-			
-		        fp_proc = fopen("/data/local/tmp/tmp_aut", "r");
-			if(fp_proc == NULL){
-				perror("Error");
-			}
-
-		        printf("open tmp_aut file\n");
-
+			//printf("open tmp_aut file\n");
 			nProcs = 0;
                         while(fgets(line, sizeof line, fp_proc) != NULL)
 			{
@@ -248,7 +231,7 @@ int main(int argc, char **argv)
 			int r;
 			
 			char index[1024];
-			sprintf(index,"%d>",i);
+			sprintf(index,"\n%d+++\n",i);
 			strcpy(save_uid_snd[i],index);
 			strcpy(save_uid_rcv[i],index);
 			strcpy(save_app[i],index);
@@ -305,10 +288,11 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-			    		strcat(save_uid_snd[i], "0   ");
+			    		//strcat(save_uid_snd[i], "0   ");
+		    			strcat(save_uid_snd[i], buffer_null);
 			   	}
 
-				strcat(save_uid_snd[i], "\n+++\n");
+				//strcat(save_uid_snd[i], "\n+++\n");
 
 				//printf("%s \n", uid_stat_rcv);
 				if((fp_uid_rcv = fopen(uid_stat_rcv,"r")) != NULL)
@@ -320,10 +304,11 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-			    		strcat(save_uid_rcv[i], "0   ");
+			    		//strcat(save_uid_rcv[i], "0   ");
+		    			strcat(save_uid_rcv[i], buffer_null);
 				}
 
-				strcat(save_uid_rcv[i], "\n+++\n");
+				//strcat(save_uid_rcv[i], "\n+++\n");
 
 				///////////////////////////////////////PID ////////////////////////////////////////////    
 				pch = strtok(NULL, " "); // move to 2nd token, process id
@@ -348,13 +333,11 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					buffer_null[0] = '0';
-		 			buffer_null[1] = '\n';
 		    			strcat(save_app[i], buffer_null);
-		    			buffer_null[0] = '\0';
+		    			//buffer_null[0] = '\0';
 				}
-				strcat(save_app[i], "\n+++\n");			
-
+				
+				//strcat(save_app[i], "\n+++\n");			
 
 			        sprintf(mem_stat[r], "/proc/%s/statm",n);
 				if((fp_mem_app = fopen(mem_stat[r],"r")) != NULL)
@@ -368,17 +351,12 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					buffer_null[0] = '0';
-		 			buffer_null[1] = '\n';
 		    			strcat(save_mem_app[i], buffer_null);
-		    			buffer_null[0] = '\0';
+		    			//buffer_null[0] = '\0';
 				}
-				strcat(save_mem_app[i], "\n+++\n");
+				//strcat(save_mem_app[i], "\n+++\n");
 			}
-		}
-		
-
-		
+		} // End if package length.
 
 		//total cpu need to sample on both modes
 		///////////////////////////////////// utilization /////////////////////////////////////////
@@ -415,10 +393,8 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
 		    strcpy(save_freq_0[i], buffer_null);
-		    buffer_null[0] = '\0';
-		}
+		 }
 
 		//////////////////////////////// frequency 1 ///////////////////////////////////////////////////
 		if((fp_freq_1 = fopen("/sys/devices/system/cpu/cpu1/cpufreq/scaling_cur_freq","r")) != NULL)
@@ -431,10 +407,8 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
 		    strcpy(save_freq_1[i], buffer_null);
-		    buffer_null[0] = '\0';
+		   
 		}
 
 		 //////////////////////////////// frequency 2 ///////////////////////////////////////////////////
@@ -447,11 +421,8 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
 		    strcpy(save_freq_2[i], buffer_null);
-		    buffer_null[0] = '\0';
-		}
+		 }
 
 		//////////////////////////////// frequency 3 ///////////////////////////////////////////////////
 		if((fp_freq_3 = fopen("/sys/devices/system/cpu/cpu3/cpufreq/scaling_cur_freq","r")) != NULL)
@@ -463,10 +434,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
+		   
 		    strcpy(save_freq_3[i], buffer_null);
-		    buffer_null[0] = '\0';
+		   
 		}
 
 		//////////////////////////////// frequency 4 ///////////////////////////////////////////////////
@@ -479,10 +449,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
+		   
 		    strcpy(save_freq_4[i], buffer_null);
-		    buffer_null[0] = '\0';
+		  
 		}
 
 		//////////////////////////////// frequency 5 ///////////////////////////////////////////////////
@@ -495,10 +464,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
+		   
 		    strcpy(save_freq_5[i], buffer_null);
-		    buffer_null[0] = '\0';
+		  
 		}
 
 		//////////////////////////////// frequency 6 ///////////////////////////////////////////////////
@@ -511,10 +479,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
+		   
 		    strcpy(save_freq_6[i], buffer_null);
-		    buffer_null[0] = '\0';
+		   
 		}
 
 		//////////////////////////////// frequency 7 ///////////////////////////////////////////////////
@@ -527,10 +494,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
+		   
 		    strcpy(save_freq_7[i], buffer_null);
-		    buffer_null[0] = '\0';
+		   
 		}
 
 		//////////////////////////// mem (total) /////////////////////////////////////////////////////
@@ -559,10 +525,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
+		   
 		    strcpy(save_tx_pk[i], buffer_null);
-		    buffer_null[0] = '\0';
+		   
 		}
 
 		/// Wi-Fi rx packets
@@ -575,10 +540,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		  buffer_null[1] = '\n';
+		  
 		    strcpy(save_rx_pk[i], buffer_null);
-		    buffer_null[0] = '\0';
+		  
 		}
 
 		/// Wi-Fi tx bytes
@@ -591,10 +555,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		  buffer_null[1] = '\n';
+		   
 		    strcpy(save_tx_byte[i], buffer_null);
-		    buffer_null[0] = '\0';
+		   
 		}
 
 		/// Wi-Fi rx bytes
@@ -607,10 +570,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    buffer_null[0] = '0';
-		    buffer_null[1] = '\n';
+		
 		    strcpy(save_rx_byte[i], buffer_null);
-		    buffer_null[0] = '\0';
+		   
 		}
 
 	       //Battery
