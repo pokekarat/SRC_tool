@@ -629,7 +629,7 @@ namespace SymbolicRegression
             tw.Close();
 
             TextWriter tw2 = new StreamWriter(this.folderName + @"\test.txt");
-            tw2.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright tx_byte rx_byte");
+            tw2.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk rx_byte tx_pk tx_byte");
 
             for (int t = 0; t < numSample; t++)
             {
@@ -651,8 +651,10 @@ namespace SymbolicRegression
                         appFreq7[t] + " " +
                         appFreq8[t] + " " +
                         255 + " " +
-                        uid_snds[t] + " " +
-                        uid_rcvs[t]               
+                        0 + " " + 
+                        uid_rcvs[t] + " " +
+                        0 + " " +
+                        uid_snds[t]
                     );
             }
 

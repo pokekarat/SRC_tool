@@ -5,6 +5,7 @@ using System.Text;
 using Eureqa;
 using System.Threading;
 using System.IO;
+using System.Collections;
 
 namespace BasicClient
 {
@@ -38,16 +39,28 @@ namespace BasicClient
             }
         }
 
+        public static string saveModelPath = @"D:\skype\model.txt";
         static void Main(string[] args)
+        {
+            string path = @"D:\skype\3\modifyPower.txt"; // path var is the path that points to modifyPower.txt in folder 3 of every test scenario.
+            string model = "power = f(cpu1,cpu2,cpu3,cpu4,cpu5,cpu6,cpu7,cpu8,freq1,freq2,freq3,freq4,freq5,freq6,freq7,freq8,bright,rx_pk,rx_byte,tx_pk,tx_byte)";
+            //string model = "power = f0(cpu1)+f1(cpu2)+f2(cpu3)+f3(cpu4)+f4(cpu5)+f5(cpu6)+f6(cpu7)+f7(cpu8)+f8(freq1)+f9(freq2)+f10(freq3)+f11(freq4)+f12(freq5)+f13(freq6)+f14(freq7)+f15(freq8)+f16(bright)+f17(rx_pk)+f18(rx_byte)+f19(tx_pk)+f20(tx_byte)+f21()";
+            
+            string ip = "140.113.88.194"; 
+            
+            Program.Run(path,model,ip);
+        }
+
+        public static void Run(string srcFile, string srcModel, string srcIP)
         {
             using (DataSet data = new DataSet())
             {
-                string sourcePath = args[0];
+                string sourcePath = srcFile;
 
                 //clean data
                 string[] datas = File.ReadAllLines(sourcePath);
                 string headLine = datas[0];
-                string newHeadlLine = headLine.Replace('"',' ');
+                string newHeadlLine = headLine.Replace('"', ' ');
                 TextWriter tw = new StreamWriter(sourcePath);
                 tw.WriteLine(newHeadlLine);
 
@@ -64,20 +77,23 @@ namespace BasicClient
 
                 Console.WriteLine("Data imported successfully");
                 Console.WriteLine(data.summary());
-                
-                string model = args[2];
+
+                string model = srcModel;
                 using (SearchOptions options = new SearchOptions(model))
                 {
-                    
+
                     Console.WriteLine("> Setting the search options");
-                    Console.WriteLine(options.summary());
+                    for (int i = 0; i < options.building_blocks_.Count; i++)
+                    {
+                        Console.WriteLine(options.building_blocks_[i]);
+                    }
                     using (Connection conn = new Connection())
                     {
                         try
                         {
                             //140.113.88.194
-                            string ipServer = args[1];
-                            Console.WriteLine("> Connecting to a eureqa server at "+ipServer);
+                            string ipServer = srcIP;
+                            Console.WriteLine("> Connecting to a eureqa server at " + ipServer);
                             if (!conn.connect(ipServer))
                             {
                                 Console.WriteLine("Unable to connect to server");
@@ -123,35 +139,56 @@ namespace BasicClient
                             else HandleLastResult(conn, "Start command sent");
 
                             Console.WriteLine("> Monitoring the search progress");
+                            Dictionary<float, Tuple<float, string>> fitSize = new Dictionary<float, Tuple<float, string>>();
+                            ArrayList models = new ArrayList();
+
                             using (SearchProgress progress = new SearchProgress())
                             {
                                 using (SolutionFrontier bestSolutions = new SolutionFrontier())
                                 {
-                                    int count = 10000;
+                                    int c = 0;
+                                   
                                     while (conn.query_progress(progress))
                                     {
-                                        Console.WriteLine("> " + progress.summary());
+                                        //Console.WriteLine("> " + progress.summary());
                                         using (var solution = progress.solution_)
                                         {
                                             if (bestSolutions.add(solution))
                                             {
-                                                Console.WriteLine("New solution found:");
-                                                Console.WriteLine(solution);
+                                                Console.Write("New solution found:");
+                                                Console.WriteLine(solution.text_);
                                             }
+
+                                            string output = " >> fitness >> " + solution.fitness_ + " >> size >> " + solution.complexity_ + " >> equation >> " + solution.text_;
+                                            Console.WriteLine(output);
+                                           
+                                            
+                                            
+                                            fitSize[solution.fitness_] = new Tuple<float,string>(solution.complexity_,solution.text_);
+                                            //models.Add(solution.text_);
+                                            
+                                            
                                         }
-                                        Console.WriteLine();
-                                        Console.WriteLine(bestSolutions.to_string());
-                                        Console.WriteLine();
-                                        Thread.Sleep(new TimeSpan(0, 0, 1));
-                                        --count;
-                                        if (count < 0)
-                                        {
-                                            break;
-                                        }
+                                        //Console.WriteLine();
+                                        //Console.WriteLine(bestSolutions.to_string());
+                                        //Console.WriteLine();
+                                        //Thread.Sleep(new TimeSpan(0, 0, 1));
+                                        ++c;
+                                        if (c > 1000) break;
+
                                     }
+                                   
                                 }
                             }
-                            Console.ReadKey();
+                            var list = fitSize.Keys.ToList();
+                            list.Sort();
+
+                            Tuple<float,string> test1;
+                            TextWriter tw2 = new StreamWriter(saveModelPath);
+                            test1 = fitSize[list[0]];
+                            tw2.WriteLine(test1.Item2);
+                            tw2.Close();  
+                         
                         }
                         finally
                         {
