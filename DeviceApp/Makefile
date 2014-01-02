@@ -11,11 +11,17 @@ WLAN="/sys/class/net/wlan0"
 all:
 	$(CC) sample.c
 	adb push $(TOOL) /data/local/tmp
+
+test:
 	adb shell ./data/local/tmp/$(TOOL) $(DELAY) $(TESTCASES) $(PACKAGE) $(WLAN)
 
-boxinstall:
+install:
 	adb push busybox /data/local/tmp
 	adb shell chmod 777 /data/local/tmp/busybox
+	adb install com.skype.rover_67406041.apk
+	adb install candy-crush-saga-mahooq.com.apk
+	adb install com.viber.voip_48.apk
+	adb install LINE-Pokopang-mahooq.com.apk
 	
 memdebug:
 	$(CC) memory.test.c memory.c -Wall
