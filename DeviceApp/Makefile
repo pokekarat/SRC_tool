@@ -16,19 +16,21 @@ test:
 	adb shell ./data/local/tmp/$(TOOL) $(DELAY) $(TESTCASES) $(PACKAGE) $(WLAN)
 
 install:
+	adb push $(TOOL) /data/local/tmp
 	adb push busybox /data/local/tmp
 	adb shell chmod 777 /data/local/tmp/busybox
 	adb install com.skype.rover_67406041.apk
 	adb install candy-crush-saga-mahooq.com.apk
 	adb install com.viber.voip_48.apk
 	adb install LINE-Pokopang-mahooq.com.apk
+	adb install com.gameloft.android.ANMP.GloftDMHM_140.apk
 	
 memdebug:
 	$(CC) memory.test.c memory.c -Wall
 	adb push $(TOOL) /data/local/tmp
 	adb shell ./data/local/tmp/$(TOOL) $(DELAY) $(TESTCASES) $(PACKAGE) $(WLAN)
 
-install:
+tool:
 	~/Downloads/android-ndk-r9b/build/tools/make-standalone-toolchain.sh --platform=android-5 --install-dir=/tmp/my-android-toolchain --ndk-dir=/home/rain/Downloads/android-ndk-r9b/
 
 env:
