@@ -175,8 +175,8 @@ namespace ProcessSample
                     inLoop = true;
                     continue;
                 }
-
-                if (cpu_app_stats[i].Equals(" "))
+                
+                if (cpu_app_stats[i].Trim().Equals("")) 
                 {
                     inLoop = false;
 
