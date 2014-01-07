@@ -20,7 +20,10 @@ namespace ParseModel
 
             string[] testFile = new string[numOfTest];
             string[] model = File.ReadAllLines(modelFile);
-            string input = model[0].Replace("sin", "Sin")
+
+            string[] formula = model[0].Split('=');
+
+            string input = formula[1].Replace("sin", "Sin")
                 .Replace("cos", "Cos");
 
             ArrayList al = new ArrayList();
@@ -33,7 +36,7 @@ namespace ParseModel
             }
 
             string[] sArray = input.Split(new char[5]{'+','-','*','/','%'});
-            float offset = float.Parse(sArray[0]);
+            //float offset = float.Parse(sArray[0]);
 
             string equation = "";
             for (int i = 0; i < al.Count; i++)
@@ -56,8 +59,20 @@ namespace ParseModel
             for (int n = 0; n < numOfTest; n++)
             {
                 
-                string[] currFile = File.ReadAllLines(rootPath+(n+1)+@"\test.txt");
-                string[] varNames = currFile[0].Split('\t');
+                string[] sampleFile = File.ReadAllLines(rootPath + (n + 1) + @"\sample.txt");
+                string[] samVars = sampleFile[0].Split('\t');
+
+                string[] currFile = File.ReadAllLines(rootPath + (n + 1) + @"\test.txt");
+                string[] varNames2 = currFile[0].Split('\t');
+
+                string[] varNames = new string[varNames2.Length + 2];
+                for (int i = 0; i < varNames2.Length; i++)
+                {
+                    varNames[i] = varNames2[i];
+                }
+
+                varNames[varNames2.Length] = "tx_pk";
+                varNames[varNames2.Length + 1] = "rx_pk";
 
                 Expression e = new Expression(equation);
                 float energy = 0;
@@ -65,7 +80,24 @@ namespace ParseModel
                 for (int i = 1; i < currFile.Length; i++)
                 {
 
-                    string[] lineValue = currFile[i].Split('\t');
+                    string[] lineValue2 = currFile[i].Split('\t');
+                    string[] lineValue = new string[lineValue2.Length + 2];
+                    for (int p = 0; p < lineValue2.Length; p++)
+                    {
+                        lineValue[p] = lineValue2[p];
+                    }
+
+                    if (i < sampleFile.Length)
+                    {
+                        string[] x = sampleFile[i].Split('\t');
+                        lineValue[lineValue2.Length] = x[19];
+                        lineValue[lineValue2.Length + 1] = x[17];
+                    }
+                    else
+                    {
+                        lineValue[lineValue2.Length] = "0";
+                        lineValue[lineValue2.Length + 1] = "0";
+                    }
 
                     for (int j = 0; j < varNames.Length; j++)
                     {
