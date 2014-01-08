@@ -14,7 +14,7 @@ namespace ParseModel
     {
         static void Main(string[] args)
         {
-            string rootPath = @"D:\skype\";
+            string rootPath = @"D:\candycrush\";
             string modelFile = rootPath + "model.txt";
             int numOfTest = 5;
 
@@ -53,17 +53,30 @@ namespace ParseModel
                 }
             }
 
-            equation += sArray[sArray.Length - 1];
+            if (sArray[sArray.Length - 1].Contains('^'))
+            {
+                //Console.WriteLine("modify");
+                string[] pow = sArray[sArray.Length - 1].Split('^');
+                equation += "Pow(" + pow[0] + "," + pow[1] + ")";
+            }
+            else
+            {
+                equation += sArray[sArray.Length - 1];
+            }
+
+            //equation += sArray[sArray.Length - 1];
+
+
             float avgEnergy = 0;
             TextWriter tw = new StreamWriter(rootPath + "energy.txt");
             for (int n = 0; n < numOfTest; n++)
             {
                 
                 string[] sampleFile = File.ReadAllLines(rootPath + (n + 1) + @"\sample.txt");
-                string[] samVars = sampleFile[0].Split('\t');
+                string[] samVars = sampleFile[0].Split(' ');
 
                 string[] currFile = File.ReadAllLines(rootPath + (n + 1) + @"\test.txt");
-                string[] varNames2 = currFile[0].Split('\t');
+                string[] varNames2 = currFile[0].Split(' ');
 
                 string[] varNames = new string[varNames2.Length + 2];
                 for (int i = 0; i < varNames2.Length; i++)
@@ -80,7 +93,7 @@ namespace ParseModel
                 for (int i = 1; i < currFile.Length; i++)
                 {
 
-                    string[] lineValue2 = currFile[i].Split('\t');
+                    string[] lineValue2 = currFile[i].Split(' ');
                     string[] lineValue = new string[lineValue2.Length + 2];
                     for (int p = 0; p < lineValue2.Length; p++)
                     {
@@ -89,7 +102,7 @@ namespace ParseModel
 
                     if (i < sampleFile.Length)
                     {
-                        string[] x = sampleFile[i].Split('\t');
+                        string[] x = sampleFile[i].Split(' ');
                         lineValue[lineValue2.Length] = x[19];
                         lineValue[lineValue2.Length + 1] = x[17];
                     }
@@ -111,6 +124,7 @@ namespace ParseModel
 
                     try
                     {
+                        double x = double.Parse(e.Evaluate().ToString());
                         Console.WriteLine(e.Evaluate());
                         energy += float.Parse(e.Evaluate().ToString())/1000;
                     }
