@@ -39,12 +39,12 @@ namespace BasicClient
             }
         }
 
-        public static string saveModelPath = @"D:\candycrush\model.txt";
+        public static string saveModelPath = @"D:\skype\model.txt";
         static void Main(string[] args)
         {
-            string path = @"D:\candycrush\1\modifyPower.txt"; // path var is the path that points to modifyPower.txt in folder 3 of every test scenario.
+            string path = @"D:\skype\1\modifyPower.txt"; // path var is the path that points to modifyPower.txt in folder 3 of every test scenario.
             //string model = "power = f(cpu1,cpu2,cpu3,cpu4,cpu5,cpu6,cpu7,cpu8,freq1,freq2,freq3,freq4,freq5,freq6,freq7,freq8,bright,rx_pk,rx_byte,tx_pk,tx_byte)";
-            string model = "power = f0(cpu1)+f1(cpu2)+f2(cpu3)+f3(cpu4)+f4(cpu5)+f5(cpu6)+f6(cpu7)+f7(cpu8)+f8(freq1)+f9(freq2)+f10(freq3)+f11(freq4)+f12(freq5)+f13(freq6)+f14(freq7)+f15(freq8)+f16(bright)+f17(rx_pk)+f18(rx_byte)+f19(tx_pk)+f20(tx_byte)";
+            string model = "power = f0(cpu1)+f1(cpu2)+f2(cpu3)+f3(cpu4)+f4(cpu5)+f5(cpu6)+f6(cpu7)+f7(cpu8)+f8(freq1)+f9(freq2)+f10(freq3)+f11(freq4)+f12(freq5)+f13(freq6)+f14(freq7)+f15(freq8)+f16(bright)+f17(rx_pk)+f18(tx_pk)";
             
             string ip = "140.113.88.194"; 
             
@@ -53,6 +53,8 @@ namespace BasicClient
 
         public static void Run(string srcFile, string srcModel, string srcIP)
         {
+           
+
             using (DataSet data = new DataSet())
             {
                 string sourcePath = srcFile;
@@ -83,10 +85,12 @@ namespace BasicClient
                 {
 
                     Console.WriteLine("> Setting the search options");
+                    options.building_blocks_.Remove("a-b");
                     for (int i = 0; i < options.building_blocks_.Count; i++)
                     {
                         Console.WriteLine(options.building_blocks_[i]);
                     }
+
                     using (Connection conn = new Connection())
                     {
                         try
@@ -174,7 +178,7 @@ namespace BasicClient
                                         //Console.WriteLine();
                                         //Thread.Sleep(new TimeSpan(0, 0, 1));
                                         ++c;
-                                        if (c > 10000) break;
+                                        if (c > 1000) break;
 
                                     }
                                    

@@ -462,9 +462,19 @@ namespace ProcessSample
 
             ArrayList rets2 = new ArrayList();
 
-            for (int j = 0; j < rets.Count; j++)
+            /*for (int j = 0; j < rets.Count; j++)
             {
                 rets2.Add(int.Parse(rets[j].ToString()) / 1000);
+            }*/
+
+            int prev = int.Parse(rets[0].ToString());
+
+            for (int i = 1; i < rets.Count; i++)
+            {
+                int curr = int.Parse(rets[i].ToString());
+                int deltaByte = curr - prev;
+                rets2.Add(deltaByte);
+                prev = curr;
             }
 
             return rets2;
@@ -480,12 +490,13 @@ namespace ProcessSample
 
             int prev = int.Parse(data[0]);
 
-            for (int i = 0; i < data.Length; i++)
+            for (int i = 1; i < data.Length; i++)
             {
                 if (string.IsNullOrEmpty(data[i]) || string.IsNullOrWhiteSpace(data[i])) continue;
 
                 int curr = int.Parse(data[i]);
-                rets.Add(curr - prev);
+                int deltaByte = curr - prev;
+                rets.Add(deltaByte);
                 prev = curr;
             }
 
@@ -528,9 +539,35 @@ namespace ProcessSample
             return rets;
         }
 
+        public static ArrayList estimateAppWifiPk(ArrayList pk, ArrayList size, ArrayList appSize)
+        {
+            int size1 = appSize.Count;
+
+            ArrayList ret = new ArrayList();
+
+            for (int i = 0; i < size1; i++)
+            {
+                float numPk = float.Parse(pk[i].ToString());
+                float numByte = float.Parse(size[i].ToString());
+                float appNumByte = float.Parse(appSize[i].ToString());
+
+                if (numByte == 0)
+                {
+                    ret.Add(0);
+                    continue;
+                }
+
+                float val = (numPk / numByte) * appNumByte;
+                ret.Add((int)val);
+            }
+
+            
+            return ret;
+        }
+
         public void processTrain()
         {
-            // ArrayList appCpu = new ArrayList();
+            //ArrayList appCpu = new ArrayList();
             //ArrayList utils = TotalCpuUtilParse(this.folderName, @"\cpu_util.txt", @"\cpu_app.txt", ref appCpu);
 
             ArrayList arr = manageCPUs(this.folderName, @"\cpu_util.txt");
@@ -615,12 +652,15 @@ namespace ProcessSample
             //ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
 
             ArrayList rx_pks = wifiParse(this.folderName + @"\wifi_rx_pk.txt");
-            ArrayList rx_bytes = wifiParse2(this.folderName + @"\wifi_rx_byte.txt");
+            ArrayList rx_bytes = wifiParse(this.folderName + @"\wifi_rx_byte.txt");
             ArrayList tx_pks = wifiParse(this.folderName + @"\wifi_tx_pk.txt");
-            ArrayList tx_bytes = wifiParse2(this.folderName + @"\wifi_tx_byte.txt");
+            ArrayList tx_bytes = wifiParse(this.folderName + @"\wifi_tx_byte.txt");
 
             ArrayList uid_rcvs = wifiParseApp(this.folderName + @"\uid_rcv.txt");
+            ArrayList uid_rcvs_pks = estimateAppWifiPk(rx_pks, rx_bytes, uid_rcvs);
+            
             ArrayList uid_snds = wifiParseApp(this.folderName + @"\uid_snd.txt");
+            ArrayList uid_snds_pks = estimateAppWifiPk(tx_pks, tx_bytes, uid_snds);
 
             ArrayList powers = PowerParse(this.folderName);
             /*ArrayList powers = new ArrayList(cpu1_utils.Count);//PowerParse(this.folderName);
@@ -629,20 +669,19 @@ namespace ProcessSample
             */
 
             TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
-            tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk rx_byte tx_pk tx_byte power");
+            //tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk rx_byte tx_pk tx_byte power");
+            tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk tx_pk power");
 
             int numSample = uid_rcvs.Count;
 
             //Use Config
             int matchTimeAndPower = Config.POWEROFFSET;
 
-            for (int s = matchTimeAndPower + 2; s < numSample; s++)
+            for (int s = matchTimeAndPower; s < numSample; s++)
             {
                 string dataLine = cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + cpu5_utils[s] + " " + cpu6_utils[s] + " " + cpu7_utils[s] + " " + cpu8_utils[s] + " "
                                   + freqs1[s] + " " + freqs2[s] + " " + freqs3[s] + " " + freqs4[s] + " " + freqs5[s] + " " + freqs6[s] + " " + freqs7[s] + " " + freqs8[s] + " "
-                                  + " " + "255" + " "
-                                  + rx_pks[s] + " " + rx_bytes[s] + " " + tx_pks[s] + " " + tx_bytes[s] + " "
-                                  + powers[(s - matchTimeAndPower)]; // we skip first two sampling power as it causes by start monsoon.
+                                  + " " + "255" + " " + rx_pks[s] + " " + tx_pks[s] + " " + powers[(s - matchTimeAndPower)];
 
                 tw.WriteLine(dataLine);
             }
@@ -650,7 +689,7 @@ namespace ProcessSample
             tw.Close();
 
             TextWriter tw2 = new StreamWriter(this.folderName + @"\test.txt");
-            tw2.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk rx_byte tx_pk tx_byte");
+            tw2.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk tx_pk");
 
             for (int t = 0; t < numSample; t++)
             {
@@ -672,10 +711,8 @@ namespace ProcessSample
                         appFreq7[t] + " " +
                         appFreq8[t] + " " +
                         255 + " " +
-                        0 + " " +
-                        uid_rcvs[t] + " " +
-                        0 + " " +
-                        uid_snds[t]
+                        uid_rcvs_pks[t] + " " +
+                        uid_snds_pks[t]
                     );
             }
 

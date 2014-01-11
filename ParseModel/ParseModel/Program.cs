@@ -14,7 +14,7 @@ namespace ParseModel
     {
         static void Main(string[] args)
         {
-            string rootPath = @"D:\candycrush\";
+            string rootPath = @"D:\skype\";
             string modelFile = rootPath + "model.txt";
             int numOfTest = 5;
 
@@ -44,8 +44,17 @@ namespace ParseModel
                 if (sArray[i].Contains('^'))
                 {
                     //Console.WriteLine("modify");
-                    string[] pow = sArray[i].Split('^');
-                    equation += "Pow(" + pow[0] + "," + pow[1] + ")" + al[i];
+                    string[] pow = sArray[sArray.Length - 1].Split('^');
+
+                    if (!pow[0].Contains('('))
+                        equation += "Pow(" + pow[0] + "," + pow[1] + ")";
+                    else
+                    {
+                        string[] sub1 = pow[0].Split('(');
+                        string[] sub2 = pow[1].Split(')');
+
+                        equation += sub1[0] + "(" + "Pow(" + sub1[1] + "," + sub2[0] + "))";
+                    }
                 }
                 else
                 {
@@ -57,7 +66,16 @@ namespace ParseModel
             {
                 //Console.WriteLine("modify");
                 string[] pow = sArray[sArray.Length - 1].Split('^');
-                equation += "Pow(" + pow[0] + "," + pow[1] + ")";
+
+                if (!pow[0].Contains('('))
+                    equation += "Pow(" + pow[0] + "," + pow[1] + ")";
+                else
+                {
+                    string[] sub1 = pow[0].Split('(');
+                    string[] sub2 = pow[1].Split(')');
+
+                    equation += sub1[0] + "(" + "Pow(" + sub1[1] + "," + sub2[0] + "))";
+                }
             }
             else
             {
@@ -65,18 +83,19 @@ namespace ParseModel
             }
 
             //equation += sArray[sArray.Length - 1];
-
+            //Calculate total energy (joules)
 
             float avgEnergy = 0;
+            double avgTotalEnergy = 0;
             TextWriter tw = new StreamWriter(rootPath + "energy.txt");
             for (int n = 0; n < numOfTest; n++)
             {
                 
                 string[] sampleFile = File.ReadAllLines(rootPath + (n + 1) + @"\sample.txt");
-                string[] samVars = sampleFile[0].Split(' ');
+                string[] samVars = sampleFile[0].Split('\t');
 
                 string[] currFile = File.ReadAllLines(rootPath + (n + 1) + @"\test.txt");
-                string[] varNames2 = currFile[0].Split(' ');
+                string[] varNames2 = currFile[0].Split('\t');
 
                 string[] varNames = new string[varNames2.Length + 2];
                 for (int i = 0; i < varNames2.Length; i++)
@@ -89,12 +108,21 @@ namespace ParseModel
 
                 Expression e = new Expression(equation);
                 float energy = 0;
+                double totalEnergy = 0;
+                
+                //Calculate total energy (joule)
+                for (int k = 1; k < sampleFile.Length; k++)
+                {
+                    string[] sampleValues = sampleFile[k].Split('\t');
+                    double power = double.Parse(sampleValues[sampleValues.Length - 1]) / 1000.0;
+                    totalEnergy += power;
+                }
 
                 for (int i = 1; i < currFile.Length; i++)
                 {
 
-                    string[] lineValue2 = currFile[i].Split(' ');
-                    string[] lineValue = new string[lineValue2.Length + 2];
+                   string[] lineValue = currFile[i].Split('\t');
+                   /*  string[] lineValue = new string[lineValue2.Length + 2];
                     for (int p = 0; p < lineValue2.Length; p++)
                     {
                         lineValue[p] = lineValue2[p];
@@ -102,7 +130,7 @@ namespace ParseModel
 
                     if (i < sampleFile.Length)
                     {
-                        string[] x = sampleFile[i].Split(' ');
+                        string[] x = sampleFile[i].Split('\t');
                         lineValue[lineValue2.Length] = x[19];
                         lineValue[lineValue2.Length + 1] = x[17];
                     }
@@ -111,6 +139,7 @@ namespace ParseModel
                         lineValue[lineValue2.Length] = "0";
                         lineValue[lineValue2.Length + 1] = "0";
                     }
+                    */
 
                     for (int j = 0; j < varNames.Length; j++)
                     {
@@ -136,12 +165,16 @@ namespace ParseModel
                 }
                 Console.WriteLine("Test " + (n+1) + " = " + energy);
                 tw.WriteLine("Test " + (n+1) + " = " + energy);
-                //Console.ReadKey();
+
+                Console.WriteLine("Total energy = " + totalEnergy); 
+                
                 avgEnergy += energy;
+                avgTotalEnergy += totalEnergy;
             }
 
             Console.WriteLine("average energy = " + (avgEnergy / 5));
-            //Console.ReadKey();
+            Console.WriteLine("average total energy = " + (avgTotalEnergy / 5));
+            Console.ReadKey();
 
            
             tw.WriteLine("Average energy " + avgEnergy / 5 + " joules");

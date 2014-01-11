@@ -10,7 +10,7 @@ namespace ProcessSample
         static void Main(string[] args)
         {
             Parse p = new Parse();
-            p.folderName = @"C:\\ebl\\skype\\1";
+            p.folderName = @"d:\skype\1";
             p.processTrain();
         }
 
