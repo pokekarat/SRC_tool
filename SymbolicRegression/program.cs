@@ -21,7 +21,11 @@ namespace SymbolicRegression
         public static string ROOTPATH = @"C:\ebl\";
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         public static string SAVEFOLDER = @"skype\";
+=======
+        public static string SAVEFOLDER = @"skype2\";
+>>>>>>> 8e0c6fcbb5942bb96b5542f2babf468a4c755d33
 =======
         public static string SAVEFOLDER = @"skype2\";
 >>>>>>> 8e0c6fcbb5942bb96b5542f2babf468a4c755d33
