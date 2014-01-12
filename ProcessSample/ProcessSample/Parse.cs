@@ -14,8 +14,8 @@ namespace ProcessSample
     {
         public static int DURATION = 100;
         public static int POWEROFFSET = 10; //time after start sampling (seconds)
-        public static string ROOTPATH = @"C:\ebl\";
-        public static string SAVEFOLDER = @"skype\";
+        public static string ROOTPATH = @"D:\";
+        public static string SAVEFOLDER = @"pokopang\";
         public static string SAVETIMES = @"1";
         public static string POWERMETER = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
         public static string SRC_TOOL_PATH = "C:\\Users\\pok\\Documents\\GitHub\\SRC_tool\\";
@@ -472,7 +472,12 @@ namespace ProcessSample
             for (int i = 1; i < rets.Count; i++)
             {
                 int curr = int.Parse(rets[i].ToString());
-                int deltaByte = curr - prev;
+
+                int deltaByte = 0;
+                
+                if(curr >= prev)
+                   deltaByte = curr - prev;
+
                 rets2.Add(deltaByte);
                 prev = curr;
             }
@@ -495,34 +500,13 @@ namespace ProcessSample
                 if (string.IsNullOrEmpty(data[i]) || string.IsNullOrWhiteSpace(data[i])) continue;
 
                 int curr = int.Parse(data[i]);
-                int deltaByte = curr - prev;
+                int deltaByte = 0;
+
+                if (curr >= prev)
+                    deltaByte = curr - prev;
                 rets.Add(deltaByte);
                 prev = curr;
             }
-
-
-            return rets;
-        }
-
-        public static ArrayList wifiParse2(String folder)
-        {
-            string file = folder;
-            //string rx = folder + @"\wifi_rx.txt";
-
-            string[] data = File.ReadAllLines(file);
-            ArrayList rets = new ArrayList();
-
-
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                if (string.IsNullOrEmpty(data[i]) || string.IsNullOrWhiteSpace(data[i])) continue;
-
-
-                rets.Add(int.Parse(data[i]) / 1000);
-
-            }
-
 
             return rets;
         }
@@ -547,6 +531,8 @@ namespace ProcessSample
 
             for (int i = 0; i < size1; i++)
             {
+               
+
                 float numPk = float.Parse(pk[i].ToString());
                 float numByte = float.Parse(size[i].ToString());
                 float appNumByte = float.Parse(appSize[i].ToString());
@@ -681,7 +667,7 @@ namespace ProcessSample
             {
                 string dataLine = cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + cpu5_utils[s] + " " + cpu6_utils[s] + " " + cpu7_utils[s] + " " + cpu8_utils[s] + " "
                                   + freqs1[s] + " " + freqs2[s] + " " + freqs3[s] + " " + freqs4[s] + " " + freqs5[s] + " " + freqs6[s] + " " + freqs7[s] + " " + freqs8[s] + " "
-                                  + " " + "255" + " " + rx_pks[s] + " " + tx_pks[s] + " " + powers[(s - matchTimeAndPower)];
+                                  + " " + "255" + " " + rx_pks[s] + " " + tx_pks[s] + " " + powers[(s - matchTimeAndPower)+3];
 
                 tw.WriteLine(dataLine);
             }

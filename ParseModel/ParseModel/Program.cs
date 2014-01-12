@@ -14,7 +14,7 @@ namespace ParseModel
     {
         static void Main(string[] args)
         {
-            string rootPath = @"D:\skype\";
+            string rootPath = @"D:\pokopang\";
             string modelFile = rootPath + "model.txt";
             int numOfTest = 5;
 
@@ -44,7 +44,7 @@ namespace ParseModel
                 if (sArray[i].Contains('^'))
                 {
                     //Console.WriteLine("modify");
-                    string[] pow = sArray[sArray.Length - 1].Split('^');
+                    string[] pow = sArray[i].Split('^');
 
                     if (!pow[0].Contains('('))
                         equation += "Pow(" + pow[0] + "," + pow[1] + ")";
@@ -55,6 +55,8 @@ namespace ParseModel
 
                         equation += sub1[0] + "(" + "Pow(" + sub1[1] + "," + sub2[0] + "))";
                     }
+
+                    equation += " " + al[i];
                 }
                 else
                 {
@@ -82,29 +84,24 @@ namespace ParseModel
                 equation += sArray[sArray.Length - 1];
             }
 
-            //equation += sArray[sArray.Length - 1];
-            //Calculate total energy (joules)
-
             float avgEnergy = 0;
             double avgTotalEnergy = 0;
+            double avgAsyncEnergy = 0;
+
             TextWriter tw = new StreamWriter(rootPath + "energy.txt");
+            
             for (int n = 0; n < numOfTest; n++)
             {
                 
                 string[] sampleFile = File.ReadAllLines(rootPath + (n + 1) + @"\sample.txt");
                 string[] samVars = sampleFile[0].Split('\t');
+                if (samVars.Length == 1)
+                    samVars = sampleFile[0].Split(' ');
 
                 string[] currFile = File.ReadAllLines(rootPath + (n + 1) + @"\test.txt");
-                string[] varNames2 = currFile[0].Split('\t');
-
-                string[] varNames = new string[varNames2.Length + 2];
-                for (int i = 0; i < varNames2.Length; i++)
-                {
-                    varNames[i] = varNames2[i];
-                }
-
-                varNames[varNames2.Length] = "tx_pk";
-                varNames[varNames2.Length + 1] = "rx_pk";
+                string[] varNames = currFile[0].Split('\t');
+                if (varNames.Length == 1)
+                    varNames = currFile[0].Split(' ');
 
                 Expression e = new Expression(equation);
                 float energy = 0;
@@ -114,36 +111,45 @@ namespace ParseModel
                 for (int k = 1; k < sampleFile.Length; k++)
                 {
                     string[] sampleValues = sampleFile[k].Split('\t');
+                    if (sampleValues.Length == 1)
+                        sampleValues = sampleFile[k].Split(' ');
+
                     double power = double.Parse(sampleValues[sampleValues.Length - 1]) / 1000.0;
                     totalEnergy += power;
                 }
+
+                //Calculate asynchronous energy (joule)
+                double asyncTotal = 0;
+                if (n == 0)
+                {
+                    string[] asyncFile = File.ReadAllLines(rootPath + (n + 1) + @"\asyncTable.txt");
+                   
+                    for (int aNum = 1; aNum < asyncFile.Length; aNum++)
+                    {
+                        string line = asyncFile[aNum];
+                        string[] lines = line.Split('\t');
+                        if (lines.Length == 1)
+                            lines = line.Split(' ');
+
+                        asyncTotal += (double.Parse(lines[1]) / 1000);
+                    }
+                }
+
 
                 for (int i = 1; i < currFile.Length; i++)
                 {
 
                    string[] lineValue = currFile[i].Split('\t');
-                   /*  string[] lineValue = new string[lineValue2.Length + 2];
-                    for (int p = 0; p < lineValue2.Length; p++)
-                    {
-                        lineValue[p] = lineValue2[p];
-                    }
 
-                    if (i < sampleFile.Length)
-                    {
-                        string[] x = sampleFile[i].Split('\t');
-                        lineValue[lineValue2.Length] = x[19];
-                        lineValue[lineValue2.Length + 1] = x[17];
-                    }
-                    else
-                    {
-                        lineValue[lineValue2.Length] = "0";
-                        lineValue[lineValue2.Length + 1] = "0";
-                    }
-                    */
+                   if (lineValue.Length == 1)
+                       lineValue = currFile[i].Split(' ');
 
                     for (int j = 0; j < varNames.Length; j++)
                     {
-                        e.Parameters[varNames[j]] = Double.Parse(lineValue[j].ToString());
+                        double value = Double.Parse(lineValue[j].ToString());
+                        if (value < 0) value = 0;
+
+                        e.Parameters[varNames[j]] = value;
                     }
 
                     if (e.HasErrors())
@@ -170,15 +176,20 @@ namespace ParseModel
                 
                 avgEnergy += energy;
                 avgTotalEnergy += totalEnergy;
+                avgAsyncEnergy += asyncTotal;
             }
 
-            Console.WriteLine("average energy = " + (avgEnergy / 5));
-            Console.WriteLine("average total energy = " + (avgTotalEnergy / 5));
-            Console.ReadKey();
+            Console.WriteLine("average energy = " + (avgEnergy / numOfTest));
+            Console.WriteLine("average total energy = " + (avgTotalEnergy / numOfTest));
 
-           
-            tw.WriteLine("Average energy " + avgEnergy / 5 + " joules");
+            tw.WriteLine("");
+            tw.WriteLine("Average energy " + avgEnergy / numOfTest + " joules");
+            tw.WriteLine("average async energy = " + (avgAsyncEnergy / numOfTest) + " joules");
+            tw.WriteLine("average total energy = " + (avgTotalEnergy / numOfTest) + " joules");
+            
             tw.Close();
+
+            //Console.ReadKey();
         }
     }
 }

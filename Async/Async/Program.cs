@@ -16,7 +16,7 @@ namespace Async
         static void Main(string[] args)
         {
             string path2r = @"C:\Users\USER\Documents\GitHub\SRC_tool\asynComponent.r";
-            string path2sample = @"D:\skype\3\"; //sample var points to "sample.txt" in folder 3.
+            string path2sample = @"D:\candycrush\1\"; //sample var points to "sample.txt" in folder 3.
             string parameters = path2r+" "+path2sample;
 
             Process asynProc = new Process();
