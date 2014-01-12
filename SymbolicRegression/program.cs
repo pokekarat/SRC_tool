@@ -16,11 +16,11 @@ namespace SymbolicRegression
 
     public class Config
     {
-        public static int DURATION = 100;
+        public static int DURATION = 215;
         public static int POWEROFFSET = 10; //time after start sampling (seconds)
         public static string ROOTPATH = @"C:\ebl\";
-        public static string SAVEFOLDER = @"skype\";
-        public static string SAVETIMES = @"5";
+        public static string SAVEFOLDER = @"skype2\";
+        public static string SAVETIMES = @"1";
         public static string POWERMETER = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
         public static string SRC_TOOL_PATH =  "C:\\Users\\pok\\Documents\\GitHub\\SRC_tool\\";
         public static string IP_EUREQA_SERVER = "140.113.88.194";
@@ -32,7 +32,7 @@ namespace SymbolicRegression
         //com.skype.raider
         public static string APP2TEST = "com.skype.raider";
 
-        public static double VOLT = 3.7;
+        public static double VOLT = 4.2;
     }
 
 
@@ -42,9 +42,9 @@ namespace SymbolicRegression
         {
             Console.WriteLine("Start ...");
 
-            //new Measure();
+            new Measure();
             //new TimerDemo().pullFile();
-            new TimerDemo().processSample();
+            //new TimerDemo().processSample();
             //Console.WriteLine("Complete ...");
            
             Console.ReadKey();
@@ -186,46 +186,42 @@ namespace SymbolicRegression
                         cleanFiles.Start();
                          break;*/
                    
-                    case "1":
+                    case "10":
                         Thread t1 = new Thread(startSampling);
                         t1.Start();
                         break;
 
-                    case "10": 
+                    case "20": 
                         Console.WriteLine("Start power meter");
                         Thread monsoon = new Thread(StartMonsoon);
                         monsoon.Start();
                         break;
 
-                    case "20":
+                    case "50":
                         Console.WriteLine("Start testing app");
                         break;
 
-                    case "50":
+                    case "150":
                         Console.WriteLine("Stop testing app");
                         break;
 
-                    case "60":
+                    case "180":
                         Console.WriteLine("Sample should stop");
                         break;
 
-                    case "70":
+                    case "200":
                         Console.WriteLine("Power should stop");
                         break;
 
-                    case "75":
-                        Console.WriteLine("test");
-                        break;
-
-                    case "90":
+                    case "210":
                         Thread t2 = new Thread(pullFile);
                         t2.Start();
                         break;
 
-                    case "100":
+                   /* case "220":/
                         Console.WriteLine("Finish job and process sampling files");
                         processSample();
-                        break;
+                        break; */
 
                     /*  case "330":
                     */
@@ -236,7 +232,7 @@ namespace SymbolicRegression
         public void startSampling()
         {
             Console.WriteLine("Start sampling");
-            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "echo sh -c \"./data/local/tmp/sample 1 " + (Config.DURATION-40) + " " + Config.WIFI + " " +Config.APP2TEST+ " &\" | adb shell");           
+            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "echo sh -c \"./data/local/tmp/a.out 1 170 " + Config.WIFI + " " +Config.APP2TEST+ " &\" | adb shell");           
             sample.CreateNoWindow = true;
             sample.UseShellExecute = false;
             sample.RedirectStandardError = true;
@@ -252,7 +248,7 @@ namespace SymbolicRegression
                 //int measureDuration = 150; //seconds
                 Process powerMonitor = new Process();
                 powerMonitor.StartInfo.FileName = Config.POWERMETER;
-                powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + "\\power.pt4  /TRIGGER=DTXD"+(Config.DURATION-40)+"A"; //60 seconds
+                powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + "\\power.pt4  /TRIGGER=DTXD180A"; //60 seconds
                 powerMonitor.Start();
                 powerMonitor.WaitForExit();
            
@@ -282,8 +278,7 @@ namespace SymbolicRegression
             }
 
             Console.WriteLine("Finish pull trace file");
-
-           
+            Console.ReadKey();
         }
 
         public void cleanFile()
@@ -319,21 +314,21 @@ namespace SymbolicRegression
             Console.WriteLine("Finish async processing...");
         }
 
-        public void processSample() 
+        /*public void processSample() 
         {
             Parse p = new Parse();
             p.folderName = savePath;
             p.processTrain();
 
-           /* if (Config.SAVETIMES.Equals("5"))
+            if (Config.SAVETIMES.Equals("5"))
             {
                // AsynProcess();
 
                 Eureqa modelProcss = new Eureqa();
                 string model = "power = f(cpu1,cpu2,cpu3,cpu4,cpu5,cpu6,cpu7,cpu8,freq1,freq2,freq3,freq4,freq5,freq6,freq7,freq8,bright,rx_pk,rx_byte,tx_pk,tx_byte)";
                 modelProcss.Run(Config.ROOTPATH + Config.SAVEFOLDER + @"1\modifyPower.txt", model, Config.IP_EUREQA_SERVER);
-            }*/
-        }
+            }
+        }*/
 
         
     }

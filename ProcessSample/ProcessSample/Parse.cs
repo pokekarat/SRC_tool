@@ -681,7 +681,7 @@ namespace ProcessSample
             {
                 string dataLine = cpu1_utils[s] + " " + cpu2_utils[s] + " " + cpu3_utils[s] + " " + cpu4_utils[s] + " " + cpu5_utils[s] + " " + cpu6_utils[s] + " " + cpu7_utils[s] + " " + cpu8_utils[s] + " "
                                   + freqs1[s] + " " + freqs2[s] + " " + freqs3[s] + " " + freqs4[s] + " " + freqs5[s] + " " + freqs6[s] + " " + freqs7[s] + " " + freqs8[s] + " "
-                                  + " " + "255" + " " + rx_pks[s] + " " + tx_pks[s] + " " + powers[(s - matchTimeAndPower)];
+                                  + " " + "255" + " " + rx_pks[s] + " " + tx_pks[s] + " " + powers[(s - matchTimeAndPower)+3];
 
                 tw.WriteLine(dataLine);
             }
