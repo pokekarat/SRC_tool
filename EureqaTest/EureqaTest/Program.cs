@@ -43,7 +43,7 @@ namespace BasicClient
         static void Main(string[] args)
         {
             string path = @"D:\skype\1\modifyPower.txt"; // path var is the path that points to modifyPower.txt in folder 3 of every test scenario.
-            //string model = "power = f(cpu1,cpu2,cpu3,cpu4,cpu5,cpu6,cpu7,cpu8,freq1,freq2,freq3,freq4,freq5,freq6,freq7,freq8,bright,rx_pk,rx_byte,tx_pk,tx_byte)";
+            //string model = "power = f(cpu1,cpu2,cpu3,cpu4,cpu5,cpu6,cpu7,cpu8,freq1,freq2,freq3,freq4,freq5,freq6,freq7,freq8,bright,rx_pk,tx_pk)";
             string model = "power = f0(cpu1)+f1(cpu2)+f2(cpu3)+f3(cpu4)+f4(cpu5)+f5(cpu6)+f6(cpu7)+f7(cpu8)+f8(freq1)+f9(freq2)+f10(freq3)+f11(freq4)+f12(freq5)+f13(freq6)+f14(freq7)+f15(freq8)+f16(bright)+f17(rx_pk)+f18(tx_pk)";
             
             string ip = "140.113.88.194"; 
@@ -85,7 +85,7 @@ namespace BasicClient
                 {
 
                     Console.WriteLine("> Setting the search options");
-                    options.building_blocks_.Remove("a-b");
+                    //options.building_blocks_.Remove("a-b");
                     for (int i = 0; i < options.building_blocks_.Count; i++)
                     {
                         Console.WriteLine(options.building_blocks_[i]);
@@ -165,9 +165,7 @@ namespace BasicClient
 
                                             string output = " >> fitness >> " + solution.fitness_ + " >> size >> " + solution.complexity_ + " >> equation >> " + solution.text_;
                                             Console.WriteLine(output);
-                                           
-                                            
-                                            
+    
                                             fitSize[solution.fitness_] = new Tuple<float,string>(solution.complexity_,solution.text_);
                                             //models.Add(solution.text_);
                                             
@@ -178,7 +176,7 @@ namespace BasicClient
                                         //Console.WriteLine();
                                         //Thread.Sleep(new TimeSpan(0, 0, 1));
                                         ++c;
-                                        if (c > 1000) break;
+                                        if (c > 2000) break;
 
                                     }
                                    
@@ -187,10 +185,9 @@ namespace BasicClient
                             var list = fitSize.Keys.ToList();
                             list.Sort();
 
-                            Tuple<float,string> test1;
                             TextWriter tw2 = new StreamWriter(saveModelPath);
-                            test1 = fitSize[list[0]];
-                            tw2.WriteLine(test1.Item2);
+                            for(int i=0; i<1; i++)
+                                tw2.WriteLine(fitSize[list[i]].Item2);
                             tw2.Close();  
                          
                         }

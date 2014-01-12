@@ -14,7 +14,8 @@ namespace ParseModel
     {
         static void Main(string[] args)
         {
-            string rootPath = @"D:\pokopang\";
+            string rootPath = @"D:\skype\";
+            //string rootPath2 = @"D:\skype_idle\";
             string modelFile = rootPath + "model.txt";
             int numOfTest = 5;
 
