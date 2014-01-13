@@ -19,19 +19,11 @@ namespace SymbolicRegression
         public static int DURATION = 215;
         public static int POWEROFFSET = 10; //time after start sampling (seconds)
         public static string ROOTPATH = @"C:\ebl\";
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
+
         public static string SAVEFOLDER = @"skype\";
-=======
-        public static string SAVEFOLDER = @"skype2\";
->>>>>>> 8e0c6fcbb5942bb96b5542f2babf468a4c755d33
-=======
-        public static string SAVEFOLDER = @"skype2\";
->>>>>>> 8e0c6fcbb5942bb96b5542f2babf468a4c755d33
-=======
-        public static string SAVEFOLDER = @"skype2\";
->>>>>>> 8e0c6fcbb5942bb96b5542f2babf468a4c755d33
+
+    
+
         public static string SAVETIMES = @"1";
         public static string POWERMETER = "C:\\Program Files (x86)\\Monsoon Solutions Inc\\PowerMonitor\\PowerToolCmd";
         public static string SRC_TOOL_PATH =  "C:\\Users\\pok\\Documents\\GitHub\\SRC_tool\\";
