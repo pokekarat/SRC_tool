@@ -31,7 +31,6 @@ namespace SRC_GUI
         private void InitializeComponent()
         {
             this.lbTime = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
             this.listBoxStatus = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
             // 
@@ -42,47 +41,36 @@ namespace SRC_GUI
             this.lbTime.ForeColor = System.Drawing.Color.White;
             this.lbTime.Location = new System.Drawing.Point(12, 9);
             this.lbTime.Name = "lbTime";
-            this.lbTime.Size = new System.Drawing.Size(334, 172);
+            this.lbTime.Size = new System.Drawing.Size(383, 172);
             this.lbTime.TabIndex = 31;
             this.lbTime.Text = "0";
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 198);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(28, 12);
-            this.label1.TabIndex = 29;
-            this.label1.Text = "Vout";
+            this.lbTime.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // listBoxStatus
             // 
             this.listBoxStatus.FormattingEnabled = true;
             this.listBoxStatus.ItemHeight = 12;
-            this.listBoxStatus.Location = new System.Drawing.Point(352, 9);
+            this.listBoxStatus.Location = new System.Drawing.Point(12, 184);
             this.listBoxStatus.Name = "listBoxStatus";
-            this.listBoxStatus.Size = new System.Drawing.Size(360, 172);
+            this.listBoxStatus.Size = new System.Drawing.Size(383, 172);
             this.listBoxStatus.TabIndex = 32;
             // 
             // Measure
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(724, 219);
+            this.ClientSize = new System.Drawing.Size(407, 369);
             this.Controls.Add(this.listBoxStatus);
             this.Controls.Add(this.lbTime);
-            this.Controls.Add(this.label1);
             this.Name = "Measure";
             this.Text = "Form1";
             this.ResumeLayout(false);
-            this.PerformLayout();
 
 		}
 
         #endregion
 
         private System.Windows.Forms.Label lbTime;
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ListBox listBoxStatus;
     }
 }

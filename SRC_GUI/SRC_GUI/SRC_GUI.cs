@@ -8,18 +8,21 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Threading;
-// using System.IO;
+using System.IO;
 using System.Diagnostics;
+using System.Runtime.InteropServices; // SEHException
 using AsyncProject;
 using EureqaTestProject;
 using ParseModelProject;
 using ProcessSample;
+using ShowResultsProject;
 
 namespace SRC_GUI
 {
     public partial class SRC_GUI : Form
     {
         delegate void SetItemCallback(string text);
+        private int currentApp;
 
         public SRC_GUI()
         {
@@ -31,14 +34,26 @@ namespace SRC_GUI
         {
             textPowerMonitorSRC.Text = @"C:\Program Files (x86)\Monsoon Solutions Inc\Power Monitor\PowerToolCmd.exe";
             textSampleRoot.Text = @"C:\Users\pok\Documents\GitHub\SRC_tool";
+            comboSampleType.SelectedIndex = 7;
+            comboBoxEuraqaServeIP.SelectedIndex = 1;
         }
 
         private void btnKohy_Click(object sender, EventArgs e)
         {
-            textRScript.Text = @"C:\Users\rain\Dropbox\NCTU\EmbeddedProject\Power\SRC_GUI\asynComponent.r";
-            textPowerMonitorSRC.Text = @"C:\Program Files (x86)\Monsoon Solutions Inc\Power Monitor\PowerToolCmd.exe";
+            textRScript.Text = @"C:\Users\raining\Desktop\Dropbox\NCTU\EmbeddedProject\Power\SRC_GUI\asynComponent.r";
+            textPowerMonitorSRC.Text = @"C:\Program Files\Monsoon Solutions Inc\Power Monitor\PowerToolCmd.exe";
             textSampleRoot.Text = @"C:\ebl";
             comboSampleType.SelectedIndex = 7;
+            comboBoxEuraqaServeIP.SelectedIndex = 0;
+        }
+
+        private void btnDropbox_Click(object sender, EventArgs e)
+        {
+            textRScript.Text = @"C:\Users\rain\Dropbox\NCTU\EmbeddedProject\Power\SRC_GUI\asynComponent.r";
+            textPowerMonitorSRC.Text = @"C:\Program Files\Monsoon Solutions Inc\Power Monitor\PowerToolCmd.exe";
+            textSampleRoot.Text = @"C:\Users\rain\Dropbox\NCTU\EmbeddedProject\Power\ebl";
+            comboSampleType.SelectedIndex = 7;
+            comboBoxEuraqaServeIP.SelectedIndex = 0;
         }
 
         // Directory Functions
@@ -69,6 +84,7 @@ namespace SRC_GUI
         private void btnSampleRoot_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog folderProjectSRC = new FolderBrowserDialog();
+            folderProjectSRC.SelectedPath = textSampleRoot.Text;
 
             if (folderProjectSRC.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -78,26 +94,37 @@ namespace SRC_GUI
 
         private void comboProjectType_SelectedIndexChanged(object sender, EventArgs e)
         {
+            currentApp = comboSampleType.SelectedIndex;
             switch (comboSampleType.Text)
             {
                 case @"skype\idle":
                 case @"skype\voice":
                 case @"skype\video":
                     textAppName.Text = "com.skype.raider";
+                    Config.PACKAGE = "com.skype.rover";
+                    Config.ACTIVITY = "com.skype.android.app.main.SplashActivity";
                     break;
                 case @"line\idle":
                 case @"line\voice":
                 case @"line\video":
                     textAppName.Text = "jp.naver.line.android";
+                    Config.PACKAGE = "";
+                    Config.ACTIVITY = "";
                     break;
                 case @"candycrush":
                     textAppName.Text = "com.king.candycrushsaga";
+                    Config.PACKAGE = "com.king.candycrushsaga";
+                    Config.ACTIVITY = "com.king.candycrushsaga.CandyCrushSagaActivity";
                     break;
                 case @"pokopang":
                     textAppName.Text = "jp.naver.SJLGPP";
+                    Config.PACKAGE = "jp.naver.SJLGPP";
+                    Config.ACTIVITY = "com.treenod.android.UnityPlayerActivity";
                     break;
                 default:
                     textAppName.Text = "none";
+                    Config.PACKAGE = "none";
+                    Config.ACTIVITY = "none";
                     break;
             }
         }
@@ -110,51 +137,83 @@ namespace SRC_GUI
 
         private void btnProcessSample_Click(object sender, EventArgs e)
         {
-            int SampleNumber = 1;
-
             updateConfig();
-            for (SampleNumber = 1; SampleNumber <= Config.TOTALSAMPLE; SampleNumber++)
+
+            try
             {
-                Parse p = new Parse();
-                //labelStatus.Text = "Test case " + SampleNumber;
-                updateStatus("Test case " + SampleNumber);
-                p.folderName = Config.WORKINGDIR + @"\" + SampleNumber;
-                if (false == p.processTrain())
-                {
-                    //labelStatus.Text = "Test case " + SampleNumber + " failed.";
-                    updateStatus("Test case " + SampleNumber + " failed.");
-                    break;
-                }
+                updateStatus("Start processing all samples : totally #" + Config.TOTALSAMPLE + " samples.");
+                Parse sample = new Parse(Config.POWEROFFSET, Config.VOLT, Config.WORKINGDIR, Config.TOTALSAMPLE);
+                updateStatus("Step2 : Process Sample Processed Successfully.");
+            }
+            catch (ApplicationException msg)
+            {
+                updateStatus(msg.Message);
+            }
+            catch (IOException msg)
+            {
+                updateStatus(msg.Message);
             }
         }
 
         private void btnAsync_Click(object sender, EventArgs e)
         {
-            int status;
+            int status = -1;
 
             updateConfig();
-            Async sample = new Async();
-            status = sample.StartProcessing(Config.RSCRIPTSRC, Config.WORKINGDIR, Config.SAMPLENUMBER);
-            //labelStatus.Text = "RScript Processing Status : " + status;
-            updateStatus("RScript Processing Status : " + status);
+
+            try
+            {
+				Async sample = new Async(Config.RSCRIPTSRC, Config.WORKINGDIR, Config.SAMPLENUMBER);
+				status = sample.status;
+				//labelStatus.Text = "RScript Processing Status : " + status;
+				updateStatus("Step 3 : Async Processing Status : " + status);
+            }
+			catch(IOException msg){
+                updateStatus(msg.Message);
+			}
         }
 
         private void btnEureqa_Click(object sender, EventArgs e)
         {
             updateConfig();
-            EureqaTest sample = new EureqaTest(Config.WORKINGDIR, Config.SAMPLENUMBER, Config.IP_EUREQA_SERVER, 10000);
-            if (false == sample.StartProcessing())
+
+            try
             {
-                Console.WriteLine("Eureqa Process Failure");
+                EureqaTest sample = new EureqaTest(Config.WORKINGDIR, Config.SAMPLENUMBER, Config.IP_EUREQA_SERVER, 10000);
+                updateStatus("Step 4 : Eureqa Processed Successfully.");
             }
+            catch(ApplicationException msg) {
+                updateStatus(msg.Message);
+            }
+			catch(ArgumentException msg){
+                updateStatus(msg.Message);
+			}
+			catch(IOException msg){
+                updateStatus(msg.Message);
+			}
+			catch(SEHException msg){
+                updateStatus(msg.Message);
+			}
         }
 
         private void btnParseModel_Click(object sender, EventArgs e)
         {
             updateConfig();
-            ParseModel sample = new ParseModel(Config.WORKINGDIR);
-            sample.StartProcessing(Config.TOTALSAMPLE);
-            sample.ShowDialog();
+
+            try
+            {
+				ParseModel sample = new ParseModel(Config.WORKINGDIR, Config.TOTALSAMPLE);
+				sample.ShowDialog();
+                updateStatus("Step 5 : ParseModel Processed Successfully.");
+            }
+			catch(IOException msg){
+                updateStatus(msg.Message);
+            }
+            catch (ArgumentException msg)
+            {
+                updateStatus(msg.Message);
+                updateStatus("Probabilily your \"model.txt\" needs to be updated.");
+            }
         }
 
         private void btnAutoComplete_Click(object sender, EventArgs e)
@@ -177,7 +236,7 @@ namespace SRC_GUI
             Config.SAMPLESUBDIR = comboSampleType.Text;
             Config.WORKINGDIR = labelWorkingDir.Text;
 
-            Config.IP_EUREQA_SERVER = textEuraqaServeIP.Text;
+            Config.IP_EUREQA_SERVER = comboBoxEuraqaServeIP.Text;
             Config.WIFI = textWifi.Text;
             Config.APP2TEST = textAppName.Text;
             Config.VOLT = Convert.ToDouble(textVout.Text);
@@ -186,23 +245,22 @@ namespace SRC_GUI
         private void SampleStart()
         {
             Measure sample;
-            sample = new Measure(0, Config.DURATION);
+            sample = new Measure(0, Config.DURATION, Config.PACKAGE, Config.ACTIVITY);
             Application.Run(sample);
         }
 
-        private void updateStatus(string status)
+        private void btnAutoStartApp_Click(object sender, EventArgs e)
         {
-            if (this.listBoxStatus.InvokeRequired)
-            {
-                SetItemCallback d = new SetItemCallback(updateStatus);
-                this.Invoke(d, new object[] { status });
-            }
-            else
-            {
-                this.listBoxStatus.Items.Add(status);
-                listBoxStatus.SelectedIndex = listBoxStatus.Items.Count - 1;
-                listBoxStatus.SelectedIndex = -1;
-            }
+            updateConfig();
+
+            updateStatus("Auto Start App");
+            updateStatus("/c " + "adb shell am start -n " + Config.PACKAGE + @"/" + Config.ACTIVITY);
+            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "adb shell am start -n " + Config.PACKAGE + @"/" + Config.ACTIVITY);
+            sample.CreateNoWindow = false;
+            sample.UseShellExecute = false;
+            sample.RedirectStandardError = true;
+            sample.RedirectStandardOutput = true;
+            Process process = Process.Start(sample);
         }
 
         private void btnPullData_Click(object sender, EventArgs e)
@@ -234,6 +292,71 @@ namespace SRC_GUI
         private void btnApplicationStarup_Click(object sender, EventArgs e)
         {
             updateConfig();
+
+            string para;
+
+            para = "adb shell am start -n " + Config.PACKAGE + @"/" + Config.ACTIVITY;
+            updateStatus("Starting application from target.");
+            updateStatus("==> " + para);
+
+            //string path = "/c " + "adb pull /data/local/tmp/stat " + savePath;
+            ProcessStartInfo pullFile = new ProcessStartInfo("cmd.exe", "/c " + para);
+            pullFile.CreateNoWindow = false;
+            pullFile.UseShellExecute = false;
+            pullFile.RedirectStandardError = true;
+            pullFile.RedirectStandardOutput = true;
+            Process process = Process.Start(pullFile);
+
+            if (process != null)
+            {
+                process.WaitForExit();
+                updateStatus("Application Started.");
+            }
+            else
+            {
+                updateStatus("Failed to connecting to target.");
+            }
+        }
+
+        private void btnViewAllResults_Click(object sender, EventArgs e)
+        {
+            updateConfig();
+
+            try
+            {
+                updateStatus("Show All Results.");
+                ShowResults sample = new ShowResults(textSampleRoot.Text.ToString());
+                sample.ShowDialog();
+            }
+            catch (IOException msg)
+            {
+                updateStatus(msg.Message);
+            }
+			catch (FormatException msg)
+			{
+                updateStatus(msg.Message);
+                updateStatus("Probabilily your \"energy.txt\" needs to be updated.");
+            }
+            catch (IndexOutOfRangeException msg)
+            {
+                updateStatus(msg.Message);
+                updateStatus("Probabilily your \"energy.txt\" needs to be updated.");
+            }
+        }
+
+        private void updateStatus(string status)
+        {
+            if (this.listBoxStatus.InvokeRequired)
+            {
+                SetItemCallback d = new SetItemCallback(updateStatus);
+                this.Invoke(d, new object[] { status });
+            }
+            else
+            {
+                this.listBoxStatus.Items.Add(status);
+                listBoxStatus.SelectedIndex = listBoxStatus.Items.Count - 1;
+                listBoxStatus.SelectedIndex = -1;
+            }
         }
     }
 
@@ -261,6 +384,8 @@ namespace SRC_GUI
         //Example app "com.google.android.youtube";
         //com.skype.raider
         public static string APP2TEST = "";
+        public static string PACKAGE = "";
+        public static string ACTIVITY = "";
 
         public static double VOLT = 4.2;
     }

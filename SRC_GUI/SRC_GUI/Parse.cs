@@ -10,22 +10,42 @@ using MoonsoonParse;
 
 namespace ProcessSample
 {
-    public class Config
-    {
-        public static int POWEROFFSET = 10; //time after start sampling (seconds)
-        public static double VOLT = 3.7;
-    }
-
     class Parse
     {
+        private bool status;
+        private int _PowerOffset;
+        private double _Volt;
+        private string _FolderName = "";
 
         ArrayList list = new ArrayList();
-        public string folderName = "";
-        public static int CPU_cores = 8;
+        private static int CPU_cores = 8;
 
-        public Parse() { }
+        public Parse(int powerOffset, double volt, string folderName, int totalSample)
+        {
+            status = false;
+            _PowerOffset = powerOffset;
+            _Volt = volt;
 
-        public static ArrayList PowerParse(string folder)
+            for (int sampleNumber = 1; sampleNumber <= totalSample; sampleNumber++)
+            {
+                _FolderName = folderName + @"\" + sampleNumber;
+                status = processTrain();
+                if (false == status) throw (new ApplicationException("Failed on processing \"" + _FolderName + "\""));
+            }
+        }
+
+        public Parse(int PowerOffset, double Volt, string FolderName)
+        {
+            status = false;
+            _PowerOffset = PowerOffset;
+            _Volt = Volt;
+            _FolderName = FolderName;
+
+            status = processTrain();
+            if (false == status) throw (new ApplicationException("Failed on processing \"" + _FolderName + "\""));
+        }
+
+        public ArrayList PowerParse(string folder)
         {
             string input = folder + @"\power.pt4";
 
@@ -69,7 +89,7 @@ namespace ProcessSample
 
                 PT4.GetSample(sampleIndex, header.captureDataMask, statusPacket, pt4Reader, ref sample);
                 //powerTable[sample.timeStamp] = sample.mainCurrent;
-                sum += (sample.mainCurrent * Config.VOLT);
+                sum += (sample.mainCurrent * _Volt);
                 int sampleRate = 5000;
                 if (sampleIndex % sampleRate == 0) // 5000 HZ : calculate every 1 second 50 for 100hz
                 {
@@ -87,7 +107,7 @@ namespace ProcessSample
             return rets;
         }
 
-        public static ArrayList FreqParse(String input)
+        public ArrayList FreqParse(String input)
         {
 
             ArrayList rets = new ArrayList();
@@ -115,7 +135,7 @@ namespace ProcessSample
             return rets;
         }
 
-        public static ArrayList MemoryParse(String folder)
+        public ArrayList MemoryParse(String folder)
         {
             string input = folder;
             string[] lines = File.ReadAllLines(input);
@@ -143,11 +163,11 @@ namespace ProcessSample
             return rets;
         }
 
-        public static ArrayList manageCpuApp(String file, String cpu_app_stat)
+        public ArrayList manageCpuApp(String file, String cpu_app_stat)
         {
             ArrayList ret = new ArrayList();
             ArrayList ret2 = new ArrayList();
-            int countLine = Parse.CPU_cores;
+            int countLine = CPU_cores;
 
             string[] cpu_app_stats = File.ReadAllLines(file + cpu_app_stat);
 
@@ -229,7 +249,7 @@ namespace ProcessSample
             return ret2;
         }
 
-        public static ArrayList manageCPUs(String file, String cpu_stat)
+        public ArrayList manageCPUs(String file, String cpu_stat)
         {
 
 
@@ -273,9 +293,9 @@ namespace ProcessSample
 
 
             ArrayList arr2 = new ArrayList();
-            for (int i = 0; i < (num * Parse.CPU_cores); i++)
+            for (int i = 0; i < (num * CPU_cores); i++)
             {
-                arr2.Add("cpu" + (i % Parse.CPU_cores));
+                arr2.Add("cpu" + (i % CPU_cores));
             }
 
             int x = 0;
@@ -310,7 +330,7 @@ namespace ProcessSample
             return arr2;
         }
 
-        public static ArrayList TotalCpuUtilParse(ArrayList cpu, ArrayList app, ref ArrayList app_utils)
+        public ArrayList TotalCpuUtilParse(ArrayList cpu, ArrayList app, ref ArrayList app_utils)
         {
             ArrayList utils = new ArrayList();
 
@@ -408,7 +428,7 @@ namespace ProcessSample
             return utils;
         }
 
-        public static ArrayList wifiParseApp(String folder)
+        public ArrayList wifiParseApp(String folder)
         {
             string file = folder;
             //string rx = folder + @"\wifi_rx.txt";
@@ -470,7 +490,7 @@ namespace ProcessSample
             return rets2;
         }
 
-        public static ArrayList wifiParse(String folder)
+        public ArrayList wifiParse(String folder)
         {
             string file = folder;
             //string rx = folder + @"\wifi_rx.txt";
@@ -496,7 +516,7 @@ namespace ProcessSample
             return rets;
         }
 
-        public static ArrayList appFreq(ArrayList freqs, ArrayList app_utils)
+        public ArrayList appFreq(ArrayList freqs, ArrayList app_utils)
         {
             ArrayList rets = new ArrayList();
             for (int i = 0; i < freqs.Count; i++)
@@ -508,7 +528,7 @@ namespace ProcessSample
             return rets;
         }
 
-        public static ArrayList estimateAppWifiPk(ArrayList pk, ArrayList size, ArrayList appSize)
+        public ArrayList estimateAppWifiPk(ArrayList pk, ArrayList size, ArrayList appSize)
         {
             int size1 = appSize.Count;
 
@@ -538,7 +558,7 @@ namespace ProcessSample
 
         public bool processTrain()
         {
-			if (!Directory.Exists(this.folderName))
+			if (!Directory.Exists(_FolderName))
 			{
 				//updateStatus("Unexpected directory : " + this.folderName);
 				return false;
@@ -547,8 +567,8 @@ namespace ProcessSample
             //ArrayList appCpu = new ArrayList();
             //ArrayList utils = TotalCpuUtilParse(this.folderName, @"\cpu_util.txt", @"\cpu_app.txt", ref appCpu);
 
-            ArrayList arr = manageCPUs(this.folderName, @"\cpu_util.txt");
-            ArrayList arr_app = manageCpuApp(this.folderName, @"\cpu_app.txt");
+            ArrayList arr = manageCPUs(_FolderName, @"\cpu_util.txt");
+            ArrayList arr_app = manageCpuApp(_FolderName, @"\cpu_app.txt");
 
             ArrayList cpu_ar1 = new ArrayList();
             ArrayList cpu_ar2 = new ArrayList();
@@ -608,14 +628,14 @@ namespace ProcessSample
             ArrayList cpu8_utils = TotalCpuUtilParse(cpu_ar8, cpu_app_ar8, ref cpu8_app_utils);
 
 
-            ArrayList freqs1 = FreqParse(this.folderName + @"\freq0.txt");
-            ArrayList freqs2 = FreqParse(this.folderName + @"\freq1.txt");
-            ArrayList freqs3 = FreqParse(this.folderName + @"\freq2.txt");
-            ArrayList freqs4 = FreqParse(this.folderName + @"\freq3.txt");
-            ArrayList freqs5 = FreqParse(this.folderName + @"\freq4.txt");
-            ArrayList freqs6 = FreqParse(this.folderName + @"\freq5.txt");
-            ArrayList freqs7 = FreqParse(this.folderName + @"\freq6.txt");
-            ArrayList freqs8 = FreqParse(this.folderName + @"\freq7.txt");
+            ArrayList freqs1 = FreqParse(_FolderName + @"\freq0.txt");
+            ArrayList freqs2 = FreqParse(_FolderName + @"\freq1.txt");
+            ArrayList freqs3 = FreqParse(_FolderName + @"\freq2.txt");
+            ArrayList freqs4 = FreqParse(_FolderName + @"\freq3.txt");
+            ArrayList freqs5 = FreqParse(_FolderName + @"\freq4.txt");
+            ArrayList freqs6 = FreqParse(_FolderName + @"\freq5.txt");
+            ArrayList freqs7 = FreqParse(_FolderName + @"\freq6.txt");
+            ArrayList freqs8 = FreqParse(_FolderName + @"\freq7.txt");
 
             ArrayList appFreq1 = appFreq(freqs1, cpu1_app_utils);
             ArrayList appFreq2 = appFreq(freqs2, cpu2_app_utils);
@@ -628,31 +648,31 @@ namespace ProcessSample
 
             //ArrayList mems = MemoryParse(this.folderName + @"\mem_total.txt");
 
-            ArrayList rx_pks = wifiParse(this.folderName + @"\wifi_rx_pk.txt");
-            ArrayList rx_bytes = wifiParse(this.folderName + @"\wifi_rx_byte.txt");
-            ArrayList tx_pks = wifiParse(this.folderName + @"\wifi_tx_pk.txt");
-            ArrayList tx_bytes = wifiParse(this.folderName + @"\wifi_tx_byte.txt");
+            ArrayList rx_pks = wifiParse(_FolderName + @"\wifi_rx_pk.txt");
+            ArrayList rx_bytes = wifiParse(_FolderName + @"\wifi_rx_byte.txt");
+            ArrayList tx_pks = wifiParse(_FolderName + @"\wifi_tx_pk.txt");
+            ArrayList tx_bytes = wifiParse(_FolderName + @"\wifi_tx_byte.txt");
 
-            ArrayList uid_rcvs = wifiParseApp(this.folderName + @"\uid_rcv.txt");
+            ArrayList uid_rcvs = wifiParseApp(_FolderName + @"\uid_rcv.txt");
             ArrayList uid_rcvs_pks = estimateAppWifiPk(rx_pks, rx_bytes, uid_rcvs);
-            
-            ArrayList uid_snds = wifiParseApp(this.folderName + @"\uid_snd.txt");
+
+            ArrayList uid_snds = wifiParseApp(_FolderName + @"\uid_snd.txt");
             ArrayList uid_snds_pks = estimateAppWifiPk(tx_pks, tx_bytes, uid_snds);
 
-            ArrayList powers = PowerParse(this.folderName);
+            ArrayList powers = PowerParse(_FolderName);
             /*ArrayList powers = new ArrayList(cpu1_utils.Count);//PowerParse(this.folderName);
             for (int i = 0; i < powers.Count; i++)
                 powers[i] = 0;
             */
 
-            TextWriter tw = new StreamWriter(this.folderName + @"\sample.txt");
+            TextWriter tw = new StreamWriter(_FolderName + @"\sample.txt");
             //tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk rx_byte tx_pk tx_byte power");
             tw.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk tx_pk power");
 
             int numSample = uid_rcvs.Count;
 
             //Use Config
-            int matchTimeAndPower = Config.POWEROFFSET;
+            int matchTimeAndPower = _PowerOffset;
 
             for (int s = matchTimeAndPower; s < numSample; s++)
             {
@@ -665,7 +685,7 @@ namespace ProcessSample
 
             tw.Close();
 
-            TextWriter tw2 = new StreamWriter(this.folderName + @"\test.txt");
+            TextWriter tw2 = new StreamWriter(_FolderName + @"\test.txt");
             tw2.WriteLine("cpu1 cpu2 cpu3 cpu4 cpu5 cpu6 cpu7 cpu8 freq1 freq2 freq3 freq4 freq5 freq6 freq7 freq8 bright rx_pk tx_pk");
 
             for (int t = 0; t < numSample; t++)

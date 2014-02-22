@@ -16,24 +16,37 @@ namespace ParseModelProject
     {
         private string rootPath;
         private string modelFile;
+        private string energyFile;
+
         private int numOfTest;
-        private string[] testFile;
-        private string input;
 
         private ArrayList al;
         private string[] sArray;
-
-        delegate void SetItemCallback(string text);
+        private static char[] delimiter = { ' ', '\t' };
+        private static char[] operators = { '+', '-', '*', '/', '%' };
 
         public ParseModel(string WorkingDir)
         {
             InitializeComponent();
-            rootPath = WorkingDir + @"\";
+            rootPath = WorkingDir;
             modelFile = WorkingDir + @"\model.txt";
+            energyFile = WorkingDir + @"\energy.txt";
+            textWorkingDir.Text = WorkingDir;
         }
 
-        private void parseModel()
+        public ParseModel(string WorkingDir, int testCases)
         {
+            InitializeComponent();
+            rootPath = WorkingDir;
+            modelFile = WorkingDir + @"\model.txt";
+            energyFile = WorkingDir + @"\energy.txt";
+            textWorkingDir.Text = WorkingDir;
+            StartProcessing(testCases);
+        }
+
+        private void readModel()
+        {
+            string input;
             string[] model;
             string[] formula;
 
@@ -49,46 +62,42 @@ namespace ParseModelProject
                     al.Add(input[i]);
                 }
             }
-
-            sArray = input.Split(new char[5] { '+', '-', '*', '/', '%' });
+            sArray = input.Split(operators);
         }
 
-        private double calcSysEnergy(string[] sampleFile)
+        private void calcSysEnergy(string path, ref double totalEnergy)
         {
-            double totalEnergy = 0.0;
             string[] sampleValues;
+            string[] sampleFile = File.ReadAllLines(path);
 
             for (int k = 1; k < sampleFile.Length; k++)
             {
                 sampleValues = sampleFile[k].Split(new char[2] { ' ', '\t' });
                 totalEnergy += (double.Parse(sampleValues[sampleValues.Length - 1]) / 1000.0);
             }
-
-            return totalEnergy;
         }
 
-        private double calcAsyncEnergy(string[] asyncFile)
+        private void calcAsyncEnergy(string path, ref double asyncTotal)
         {
-            double asyncTotal = 0.0;
             string[] lines;
+            string[] asyncFile = File.ReadAllLines(path);
 
             for (int aNum = 1; aNum < asyncFile.Length; aNum++)
             {
-                lines = asyncFile[aNum].Split(new char[2] { ' ', '\t' });
+                lines = asyncFile[aNum].Split(delimiter);
                 asyncTotal += (double.Parse(lines[1]) / 1000);
             }
-
-            return asyncTotal;
         }
 
-        private float calcApplicationEnergy(string[] currFile, string[] varNames, Expression e)
+        private void calcApplicationEnergy(string path, Expression e, ref double appEnergy)
         {
-            float energy = 0.0f;
-			string[] lineValue;
-			
+            string[] lineValue;
+            string[] currFile = File.ReadAllLines(path);
+            string[] varNames = currFile[0].Split(delimiter);
+
             for (int i = 1; i < currFile.Length; i++)
             {
-                lineValue = currFile[i].Split(new char[2] { ' ', '\t' });
+                lineValue = currFile[i].Split(delimiter);
 
                 for (int j = 0; j < varNames.Length; j++)
                 {
@@ -98,16 +107,12 @@ namespace ParseModelProject
                     e.Parameters[varNames[j]] = value;
                 }
 
-                if (e.HasErrors())
-                {
-                    updateStatus("e has error " + e.Error);
-                }
+                if (e.HasErrors()) updateStatus("e has error " + e.Error);
 
                 try
                 {
                     double x = double.Parse(e.Evaluate().ToString());
-                    // Console.WriteLine(e.Evaluate());
-                    energy += float.Parse(e.Evaluate().ToString()) / 1000;
+                    appEnergy += float.Parse(e.Evaluate().ToString()) / 1000;
                 }
                 catch (EvaluationException ee)
                 {
@@ -115,19 +120,69 @@ namespace ParseModelProject
                 }
 
             }
+        }
 
-            return energy;
+        private void dataOutput(string equation)
+        {
+            using (TextWriter outputFile = new StreamWriter(energyFile))
+            {
+                double sumAppEnergy = 0;
+                double sumTotalEnergy = 0;
+                double sumAsyncEnergy = 0;
+
+                for (int curSample = 1; curSample <= numOfTest; curSample++)
+                {
+                    //Calculate System Energy (joule)
+                    double totalEnergy = 0;
+                    calcSysEnergy(rootPath + @"\" + curSample + @"\sample.txt", ref totalEnergy);
+
+                    //Calculate asynchronous energy (joule)
+                    double asyncTotal = 0;
+                    if (curSample == 1) calcAsyncEnergy(rootPath + @"\" + curSample + @"\asyncTable.txt", ref asyncTotal);
+
+                    // Calculate Application Energy
+                    double appEnergy = 0;
+                    Expression e = new Expression(equation);
+                    calcApplicationEnergy(rootPath + @"\" + curSample + @"\test.txt", e, ref appEnergy);
+
+                    updateStatus("");
+                    updateStatus("Test Case " + curSample);
+                    updateStatus("Application Energy " + " = " + appEnergy);
+                    outputFile.WriteLine("");
+                    outputFile.WriteLine("Test Case " + curSample);
+                    outputFile.WriteLine("Application Energy " + " = " + appEnergy);
+
+                    updateStatus("Total Energy = " + totalEnergy);
+
+                    sumAppEnergy += appEnergy;
+                    sumTotalEnergy += totalEnergy;
+                    sumAsyncEnergy += asyncTotal;
+                }
+
+                updateStatus("");
+                updateStatus("Average Application Energy = " + sumAppEnergy / numOfTest + " joules");
+                updateStatus("Average Async Energy = " + (sumAsyncEnergy / numOfTest) + " joules");
+                updateStatus("Average Total Energy = " + (sumTotalEnergy / numOfTest) + " joules");
+
+                outputFile.WriteLine("");
+                outputFile.WriteLine("Average Application Energy = " + sumAppEnergy / numOfTest + " joules");
+                outputFile.WriteLine("Average Async Energy = " + (sumAsyncEnergy / numOfTest) + " joules");
+                outputFile.WriteLine("Average Total Energy = " + (sumTotalEnergy / numOfTest) + " joules");
+
+                textAppPower.Text = string.Format("{0:.####} joules", sumAppEnergy / numOfTest);
+                textAsyncPower.Text = string.Format("{0:.####} joules", sumAsyncEnergy / numOfTest);
+                textTotalPower.Text = string.Format("{0:.####} joules", sumTotalEnergy / numOfTest);
+            }
         }
 
         public bool StartProcessing(int testCases = 5)
         {
-			updateStatus("Process begining...");
+            updateStatus("Process begining...");
             //float offset = float.Parse(sArray[0]);
             numOfTest = testCases;
-            testFile = new string[numOfTest];
             al = new ArrayList();
-			
-            parseModel();
+
+            readModel();
 
             string equation = "";
             for (int i = 0; i < al.Count; i++)
@@ -175,95 +230,29 @@ namespace ParseModelProject
                 equation += sArray[sArray.Length - 1];
             }
 
-            float avgEnergy = 0;
-            double avgTotalEnergy = 0;
-            double avgAsyncEnergy = 0;
-
-            TextWriter outputFile = new StreamWriter(rootPath + "energy.txt");
-
-            for (int curSample = 1; curSample <= numOfTest; curSample++)
-            {
-				if (!Directory.Exists(rootPath + curSample))
-				{
-					updateStatus("Unexpected directory : " + rootPath + curSample);
-					outputFile.Close();
-					return false;
-				}
-				
-                string[] sampleFile = File.ReadAllLines(rootPath + curSample + @"\sample.txt");
-                string[] samVars = sampleFile[0].Split(new char[2] { ' ', '\t' });
-
-                string[] asyncFile;
-
-                string[] currFile = File.ReadAllLines(rootPath + curSample + @"\test.txt");
-                string[] varNames = currFile[0].Split(new char[2] { ' ', '\t' });
-
-                Expression e = new Expression(equation);
-                float energy = 0;
-                double totalEnergy = 0;
-                double asyncTotal = 0;
-
-                //Calculate System Energy (joule)
-                totalEnergy = calcSysEnergy(sampleFile);
-
-                //Calculate asynchronous energy (joule)
-                if (curSample == 1)
-                {
-                    asyncFile = File.ReadAllLines(rootPath + curSample + @"\asyncTable.txt");
-                    asyncTotal = calcAsyncEnergy(asyncFile);
-                }
-
-                // Calculate Application Energy
-                energy = calcApplicationEnergy(currFile, varNames, e);
-
-                updateStatus("");
-                outputFile.WriteLine("");
-                updateStatus("Test Case " + curSample);
-                outputFile.WriteLine("Test Case " + curSample);
-                updateStatus("Application Energy " + " = " + energy);
-                outputFile.WriteLine("Application Energy " + " = " + energy);
-
-                updateStatus("Total Energy = " + totalEnergy);
-
-                avgEnergy += energy;
-                avgTotalEnergy += totalEnergy;
-                avgAsyncEnergy += asyncTotal;
-            }
-
-            updateStatus("");
-            updateStatus("Average Application Energy " + avgEnergy / numOfTest + " joules");
-            updateStatus("Average Async Energy = " + (avgAsyncEnergy / numOfTest) + " joules");
-            updateStatus("Average Total Energy = " + (avgTotalEnergy / numOfTest) + " joules");
-
-            outputFile.WriteLine("");
-            outputFile.WriteLine("Average Application Energy " + avgEnergy / numOfTest + " joules");
-            outputFile.WriteLine("Average Async Energy = " + (avgAsyncEnergy / numOfTest) + " joules");
-            outputFile.WriteLine("Average Total Energy = " + (avgTotalEnergy / numOfTest) + " joules");
-
-            outputFile.Close();
-			updateStatus("Process finished.");
+            dataOutput(equation);
+            updateStatus("Process finished.");
 
             return true;
         }
 
         private void updateStatus(string status)
         {
-            if (this.listBoxStatus.InvokeRequired)
-            {
-                SetItemCallback d = new SetItemCallback(updateStatus);
-                this.Invoke(d, new object[] { status });
-            }
-            else
-            {
-                this.listBoxStatus.Items.Add(status);
-                this.listBoxStatus.SelectedIndex = listBoxStatus.Items.Count - 1;
-                this.listBoxStatus.SelectedIndex = -1;
-            }
+            this.listBoxStatus.Items.Add(status);
+            this.listBoxStatus.SelectedIndex = listBoxStatus.Items.Count - 1;
+            this.listBoxStatus.SelectedIndex = -1;
         }
 
         private void btnProcess_Click(object sender, EventArgs e)
         {
-            StartProcessing(Convert.ToInt32(numCount.Value));
+            try
+            {
+                StartProcessing(Convert.ToInt32(numCount.Value));
+            }
+            catch (IOException msg)
+            {
+                updateStatus(msg.Message);
+            }
         }
     }
 }

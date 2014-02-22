@@ -62,6 +62,12 @@
       <DependentUpon>ParseModel.cs</DependentUpon>
     </Compile>
     <Compile Include="ReadPT4.cs" />
+    <Compile Include="Results.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Results.designer.cs">
+      <DependentUpon>Results.cs</DependentUpon>
+    </Compile>
     <Compile Include="SRC_GUI.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -78,6 +84,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="ParseModel.resx">
       <DependentUpon>ParseModel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Results.resx">
+      <DependentUpon>Results.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SRC_GUI.resx">
       <DependentUpon>SRC_GUI.cs</DependentUpon>

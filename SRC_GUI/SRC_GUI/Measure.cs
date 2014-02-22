@@ -17,14 +17,20 @@ namespace SRC_GUI
     {
         private int turbo;
         private int currentTime, stopTime;
+        private string _package;
+        private string _activity;
         private System.Windows.Forms.Timer Clock;
+        private System.Media.SoundPlayer player = new System.Media.SoundPlayer(@"beep.wav");
         delegate void SetItemCallback(string text);
 
         string savePath = "";
 
-        public Measure(int start, int stop)
+        public Measure(int start, int stop, string package, string activity)
         {
             InitializeComponent();
+
+            _package = package;
+            _activity = activity;
 
             savePath = Config.WORKINGDIR + @"\" + Config.SAMPLENUMBER;
             if (!Directory.Exists(savePath))
@@ -38,7 +44,7 @@ namespace SRC_GUI
             this.currentTime = start;
             this.stopTime = stop;
             Clock = new System.Windows.Forms.Timer();
-            turbo = 5;
+            turbo = 1;
             StartTimer(1000 / turbo);
         }
 
@@ -82,7 +88,7 @@ namespace SRC_GUI
             if (sender == Clock)
             {
                 // Terminate clock
-                if (StopTimer()) return;
+                if (StopTimer()) this.Close();
 
                 // Show current time
                 lbTime.Text = this.currentTime.ToString();
@@ -96,14 +102,22 @@ namespace SRC_GUI
                         break;
                     case 20:
                         updateStatus("Start power meter");
-                        //Thread monsoon = new Thread(StartMonsoon);
-                        //monsoon.Start();
+                        Thread monsoon = new Thread(StartMonsoon);
+                        monsoon.Start();
+                        break;
+                    case 45:
+                        player.Play();
                         break;
                     case 50:
+                        //Thread t2 = new Thread(startApp);
+                        //t2.Start();
                         updateStatus("Start testing app");
                         break;
                     case 150:
                         updateStatus("Stop testing app");
+                        break;
+                    case 153:
+                        player.Play();
                         break;
                     case 180:
                         updateStatus("Sample should stop");
@@ -112,8 +126,8 @@ namespace SRC_GUI
                         updateStatus("Power should stop");
                         break;
                     case 210:
-                        Thread t2 = new Thread(pullFile);
-                        t2.Start();
+                        Thread t3 = new Thread(pullFile);
+                        t3.Start();
                         break;
                 }
 
@@ -137,13 +151,14 @@ namespace SRC_GUI
         private void startSampling()
         {
             updateStatus("Start sampling");
-            ProcessStartInfo sample = new ProcessStartInfo("cmd.exe", "/c " + "echo sh -c \"./data/local/tmp/a.out 1 170 " + Config.WIFI + " " + Config.APP2TEST + " &\" | adb shell");
-            sample.CreateNoWindow = false;
-            sample.UseShellExecute = false;
-            sample.RedirectStandardError = true;
-            sample.RedirectStandardOutput = true;
-            Process process = Process.Start(sample);
-
+            Process sample = new Process();
+            sample.StartInfo.FileName = "cmd.exe";
+            sample.StartInfo.Arguments = "/c " + "echo sh -c \"./data/local/tmp/a.out 1 170 " + Config.WIFI + " " + Config.APP2TEST + " &\" | adb shell";
+            sample.StartInfo.UseShellExecute = false;
+            //sample.StartInfo.RedirectStandardError = true;
+            //sample.StartInfo.RedirectStandardOutput = true;
+            sample.Start();
+            //sample.WaitForExit();
         }
 
         private void StartMonsoon()
@@ -152,10 +167,26 @@ namespace SRC_GUI
             //int measureDuration = 150; //seconds
             Process powerMonitor = new Process();
             powerMonitor.StartInfo.FileName = Config.POWERMETER;
+            powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + @"\power.pt4  /TRIGGER=DTXD040A"; //60 seconds
             powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + @"\power.pt4  /TRIGGER=DTXD180A"; //60 seconds
+            //powerMonitor.StartInfo.UseShellExecute = false;
             powerMonitor.Start();
             powerMonitor.WaitForExit();
 
+        }
+
+        private void startApp()
+        {
+            updateStatus("Auto Start App");
+            updateStatus("/c " + "adb shell am start -n " + _package + @"/" + _activity);
+            Process appProcess = new Process();
+            appProcess.StartInfo.FileName = "adb.exe";
+            appProcess.StartInfo.Arguments = "shell am start -n " + _package + @"/" + _activity;
+            appProcess.StartInfo.UseShellExecute = false;
+            //sample.StartInfo.RedirectStandardError = true;
+            //sample.StartInfo.RedirectStandardOutput = true;
+            appProcess.Start();
+            //appProcess.WaitForExit();
         }
 
         public void pullFile()
