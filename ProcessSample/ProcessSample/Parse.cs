@@ -222,7 +222,13 @@ namespace ProcessSample
                     {
                         if (match.ContainsKey(a.ToString()))
                         {
-                            ret2.Add(match[a.ToString()][0] + " " + match[a.ToString()][1]);
+                            string s = match[a.ToString()][0] + " " + match[a.ToString()][1];
+                           /* if (s.Contains('\t'))
+                            {
+                                s.Split('\t');               
+                            } */
+
+                            ret2.Add(s);
                         }
                         else
                         {
@@ -343,6 +349,8 @@ namespace ProcessSample
 
             for (int i = 0; i < cpu.Count; i++)
             {
+                if (i == 45)
+                    Console.WriteLine("test");
 
                 string[] cpu_current = cpu[i].ToString().Split(' ');
 
@@ -390,11 +398,18 @@ namespace ProcessSample
                     double sTime = double.Parse(appLines[1]);
                     double userUtil = 100 * (uTime - uTime_before) / diff_total;
                     double sysUtil = 100 * (sTime - sTime_before) / diff_total;
+
                     app_util = userUtil + sysUtil;
+
+                    if (app_util < 0)
+                    {
+                        app_util = 0;
+                        //Console.WriteLine("test");
+                    }
 
                     if (app_util > diff_usage)
                     {
-                        Console.WriteLine("bug");
+                        //Console.WriteLine("bug");
                         app_util = diff_usage;
                     }
 
@@ -407,6 +422,8 @@ namespace ProcessSample
                 {
                     app_util = 0;
                 }
+
+            
 
                 app_utils.Add(Math.Round(app_util, 2));
 
