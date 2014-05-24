@@ -39,9 +39,9 @@ namespace SRC_GUI
             this.lbTime.BackColor = System.Drawing.Color.Black;
             this.lbTime.Font = new System.Drawing.Font("Times New Roman", 140.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lbTime.ForeColor = System.Drawing.Color.White;
-            this.lbTime.Location = new System.Drawing.Point(12, 9);
+            this.lbTime.Location = new System.Drawing.Point(12, 10);
             this.lbTime.Name = "lbTime";
-            this.lbTime.Size = new System.Drawing.Size(383, 172);
+            this.lbTime.Size = new System.Drawing.Size(628, 186);
             this.lbTime.TabIndex = 31;
             this.lbTime.Text = "0";
             this.lbTime.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -49,17 +49,16 @@ namespace SRC_GUI
             // listBoxStatus
             // 
             this.listBoxStatus.FormattingEnabled = true;
-            this.listBoxStatus.ItemHeight = 12;
-            this.listBoxStatus.Location = new System.Drawing.Point(12, 184);
+            this.listBoxStatus.Location = new System.Drawing.Point(12, 199);
             this.listBoxStatus.Name = "listBoxStatus";
-            this.listBoxStatus.Size = new System.Drawing.Size(383, 172);
+            this.listBoxStatus.Size = new System.Drawing.Size(628, 186);
             this.listBoxStatus.TabIndex = 32;
             // 
             // Measure
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(407, 369);
+            this.ClientSize = new System.Drawing.Size(652, 400);
             this.Controls.Add(this.listBoxStatus);
             this.Controls.Add(this.lbTime);
             this.Name = "Measure";

@@ -150,7 +150,7 @@ namespace EureqaTestProject
 								using (SolutionFrontier bestSolutions = new SolutionFrontier())
 								{
                                     int c = 0;
-                                    string output;
+                                    //string output;
 
                                     Console.WriteLine("Debug 1");
 									while (conn.query_progress(progress))

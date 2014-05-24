@@ -14,7 +14,7 @@ namespace ProcessSample
     {
         private bool status;
         private int _PowerOffset;
-        private double _Volt;
+        public double _Volt;
         private string _FolderName = "";
 
         ArrayList list = new ArrayList();
@@ -43,6 +43,11 @@ namespace ProcessSample
 
             status = processTrain();
             if (false == status) throw (new ApplicationException("Failed on processing \"" + _FolderName + "\""));
+        }
+
+        public Parse()
+        {
+
         }
 
         public ArrayList PowerParse(string folder)
@@ -93,6 +98,7 @@ namespace ProcessSample
                 int sampleRate = 5000;
                 if (sampleIndex % sampleRate == 0) // 5000 HZ : calculate every 1 second 50 for 100hz
                 {
+                    if (sampleIndex == 0) continue;
 
                     powAvg = sum / sampleRate;
                     rets.Add(Math.Round(powAvg, 2));
@@ -103,7 +109,7 @@ namespace ProcessSample
 
             // tw.Close();
             pt4Reader.Close();
-            Console.WriteLine("Finish: Power");
+            //Console.WriteLine("Finish: Power");
             return rets;
         }
 

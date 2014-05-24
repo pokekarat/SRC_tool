@@ -25,13 +25,54 @@ namespace SRC_GUI
 
         string savePath = "";
 
+        int innerStep = 1;
+        int maxInnerStep = 5;
+        int outerStep = 1;
+        int maxOuterStep = 40;
+        int currentUtil = 0;
+
+        public Measure(int startTime, int stopTime, String package, String activity, int mode)
+        {
+
+            InitializeComponent();
+
+            this.currentTime = startTime;
+            this.stopTime = 800; // stopTime;
+            Clock = new System.Windows.Forms.Timer();
+            turbo = 1;
+
+            if (Config.isCPU)
+            {
+                this.stopTime = 800;
+            }
+            else if (Config.isLCD)
+            {
+                this.stopTime = 800;
+            }
+
+            //Set training app (Android)
+            _package = "com.example.semionline";
+            _activity = "com.example.semionline.MainActivity";
+            savePath = @"D:\SemiOnline\";
+            if (!Directory.Exists(savePath))
+            {
+                Directory.CreateDirectory(savePath);
+            }
+
+            //chkBusybox();
+
+            cleanFile(" /sdcard/semionline/*.txt");
+            StartTimer2(1000 / turbo);
+                        
+        }
+
         public Measure(int start, int stop, string package, string activity)
         {
             InitializeComponent();
 
+            //Set training app (Android)
             _package = package;
             _activity = activity;
-
             savePath = Config.WORKINGDIR + @"\" + Config.SAMPLENUMBER;
             if (!Directory.Exists(savePath))
             {
@@ -39,13 +80,14 @@ namespace SRC_GUI
             }
 
             //chkBusybox();
-            cleanFile();
+            cleanFile(" /data/local/tmp/stat/*.txt");
+            StartTimer(1000 / turbo);
 
             this.currentTime = start;
             this.stopTime = stop;
             Clock = new System.Windows.Forms.Timer();
             turbo = 1;
-            StartTimer(1000 / turbo);
+
         }
 
         private void chkBusybox()
@@ -71,11 +113,20 @@ namespace SRC_GUI
             Clock.Start();
         }
 
+        private void StartTimer2(int interval)
+        {
+
+            Clock.Interval = interval;
+            Clock.Tick += new EventHandler(Timer_Tick2);
+            Clock.Start();
+            
+        }
+
         private bool StopTimer()
         {
             if (this.currentTime > this.stopTime)
             {
-                //Clock.Tick -= new System.EventHandler(Timer_Tick);
+                Clock.Tick -= new System.EventHandler(Timer_Tick2);
                 Clock.Stop();
                 return true;
             }
@@ -97,7 +148,7 @@ namespace SRC_GUI
                 switch (this.currentTime)
                 {
                     case 10:
-                        Thread t1 = new Thread(startSampling);
+                        Thread t1 = new Thread(startSamplingApp);
                         t1.Start();
                         break;
                     case 20:
@@ -126,8 +177,8 @@ namespace SRC_GUI
                         updateStatus("Power should stop");
                         break;
                     case 210:
-                        Thread t3 = new Thread(pullFile);
-                        t3.Start();
+                        //Thread t3 = new Thread(pullFile);
+                        //t3.Start();
                         break;
                 }
 
@@ -135,81 +186,152 @@ namespace SRC_GUI
                 this.currentTime++;
             }
         }
-
-        private void cleanFile()
+       
+       
+        private void Timer_Tick2(object sender, EventArgs eArgs)
         {
-            updateStatus("Clean files");
-            ProcessStartInfo rmFile = new ProcessStartInfo("cmd.exe", "/c " + "adb shell rm /data/local/tmp/stat/*.txt");
-            rmFile.CreateNoWindow = false;
-            rmFile.UseShellExecute = false;
-            rmFile.RedirectStandardError = true;
-            rmFile.RedirectStandardOutput = true;
-            Process process2 = Process.Start(rmFile);
-            updateStatus("Finish clean files in /data/local/tmp/stat");
+            if (sender == Clock)
+            {
+                // Terminate clock
+                if (StopTimer())
+                {
+                    if (Config.isCPU)
+                    {
+                        //this.Close();
+                        if (outerStep < maxOuterStep)
+                        {
+                            this.currentTime = 0;
+                            cleanFile(" /sdcard/semionline/*.txt");
+
+                            if (innerStep < maxInnerStep)
+                            {
+                                ++innerStep;
+                            }
+                            else
+                            {
+                                innerStep = 1;
+                                currentUtil += 10;
+                            }
+
+                            ++outerStep;
+                            StartTimer2(1000);
+
+                        }
+                        else
+                        {
+                            this.Close();
+                        }
+                    }
+                    else if (Config.isLCD)
+                    {
+
+                    }
+                }
+
+                // Show current time
+                lbTime.Text = this.currentTime.ToString();
+                // updateStatus("Time " + this.currentTime.ToString());
+
+                if (this.currentTime == 1)
+                {
+                    string path = "";
+
+                    if (Config.isCPU)
+                    {
+                        path = savePath + "util" + currentUtil + "_" + innerStep;
+                    }
+                    else if (Config.isLCD)
+                    {
+                        path = savePath + "lcd";
+                    }
+
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+
+                    Thread t1 = new Thread(this.startApp);
+                    t1.Start();
+                    //this.pullFile("/sdcard/semionline/", "pullFolder");
+                }
+                else if (this.currentTime == 30)
+                {
+                    Thread t2 = new Thread(this.StartMonsoon);
+                    t2.Start();
+                }
+                else if (this.currentTime == (this.stopTime-20))
+                {
+                    this.pullFile("/sdcard/semionline/", "util" + currentUtil + "_" + innerStep);
+                }
+ 
+                // Tick
+                this.currentTime++;
+            }
         }
 
-        private void startSampling()
+        private void cleanFile(String target)
         {
-            updateStatus("Start sampling");
-            Process sample = new Process();
-            sample.StartInfo.FileName = "cmd.exe";
-            sample.StartInfo.Arguments = "/c " + "echo sh -c \"./data/local/tmp/a.out 1 170 " + Config.WIFI + " " + Config.APP2TEST + " &\" | adb shell";
-            sample.StartInfo.UseShellExecute = false;
-            //sample.StartInfo.RedirectStandardError = true;
-            //sample.StartInfo.RedirectStandardOutput = true;
-            sample.Start();
-            //sample.WaitForExit();
+          callProcess(Config.ADB," shell rm "+target);
         }
 
-        private void StartMonsoon()
+        private void startSamplingApp()
         {
-            updateStatus("Start Power sampling");
-            //int measureDuration = 150; //seconds
-            Process powerMonitor = new Process();
-            powerMonitor.StartInfo.FileName = Config.POWERMETER;
-            powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + @"\power.pt4  /TRIGGER=DTXD040A"; //60 seconds
-            powerMonitor.StartInfo.Arguments = "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + @"\power.pt4  /TRIGGER=DTXD180A"; //60 seconds
-            //powerMonitor.StartInfo.UseShellExecute = false;
-            powerMonitor.Start();
-            powerMonitor.WaitForExit();
+           
+            callProcess("cmd.exe","/c " + "echo sh -c \"./data/local/tmp/a.out 1 170 " + Config.WIFI + " " + Config.APP2TEST + " &\" | adb shell");
+        }
 
+        private void startAppMonsoon()
+        {
+            this.startApp();
+            this.StartMonsoon();
         }
 
         private void startApp()
         {
-            updateStatus("Auto Start App");
-            updateStatus("/c " + "adb shell am start -n " + _package + @"/" + _activity);
-            Process appProcess = new Process();
-            appProcess.StartInfo.FileName = "adb.exe";
-            appProcess.StartInfo.Arguments = "shell am start -n " + _package + @"/" + _activity;
-            appProcess.StartInfo.UseShellExecute = false;
-            //sample.StartInfo.RedirectStandardError = true;
-            //sample.StartInfo.RedirectStandardOutput = true;
-            appProcess.Start();
-            //appProcess.WaitForExit();
+            callProcess(Config.ADB, " shell am start -n " + _package + @"/" + _activity + " --es extraKey "+currentUtil);            
         }
 
-        public void pullFile()
+        private void killApp()
         {
-            updateStatus("Start Pull files");
+            callProcess(Config.ADB, " shell am force-stop " + _package);
+        }
 
-            //string path = "/c " + "adb pull /data/local/tmp/stat " + savePath;
-            ProcessStartInfo pullFile = new ProcessStartInfo("cmd.exe", "/c " + "adb pull /data/local/tmp/stat " + savePath);
-            pullFile.CreateNoWindow = false;
-            pullFile.UseShellExecute = false;
-            pullFile.RedirectStandardError = true;
-            pullFile.RedirectStandardOutput = true;
-            Process process = Process.Start(pullFile);
+        private void StartMonsoon()
+        {
+            int offset = 0;
 
-            if (process != null)
-            {
-                process.WaitForExit();
-                updateStatus("Finished pulling trace files.");
+            if (Config.isCPU)
+            { 
+                offset = 150; 
             }
-            else
-            {
-                updateStatus("Failed to pull files from target.");
+            else if (Config.isLCD)
+            { 
+                offset = 50;
             }
+
+            callProcess(Config.POWERMETER, "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + "util" + currentUtil + "_" + innerStep + @"\power.pt4  /TRIGGER=DTXD" + (this.stopTime - offset) + "A");   
+        }
+
+        public void pullFile(String target, String host)
+        {
+            String saveTarget = savePath + host;
+            if (!Directory.Exists(saveTarget))
+                Directory.CreateDirectory(saveTarget);
+
+            callProcess(Config.ADB, " pull " + target + " " + saveTarget);
+
+            killApp();
+
+        }
+
+        private void callProcess(string fileName, string argues)
+        {
+            updateStatus("Start " + fileName + " " + argues);
+            Process proc = new Process();
+            proc.StartInfo.FileName = fileName;
+            proc.StartInfo.Arguments = argues;
+            proc.Start();
+            updateStatus("Finish call process");
         }
 
         private void updateStatus(string status)

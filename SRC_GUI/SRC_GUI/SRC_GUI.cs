@@ -16,6 +16,7 @@ using EureqaTestProject;
 using ParseModelProject;
 using ProcessSample;
 using ShowResultsProject;
+using System.Collections;
 
 namespace SRC_GUI
 {
@@ -132,7 +133,8 @@ namespace SRC_GUI
         private void btnSample_Click(object sender, EventArgs e)
         {
             updateConfig();
-            new Thread(SampleStart).Start();
+            Thread thread = new Thread(() => SampleStart(1));
+            thread.Start();
         }
 
         private void btnProcessSample_Click(object sender, EventArgs e)
@@ -242,10 +244,10 @@ namespace SRC_GUI
             Config.VOLT = Convert.ToDouble(textVout.Text);
         }
 
-        private void SampleStart()
+        private void SampleStart(int mode)
         {
             Measure sample;
-            sample = new Measure(0, Config.DURATION, Config.PACKAGE, Config.ACTIVITY);
+            sample = new Measure(0, Config.DURATION, Config.PACKAGE, Config.ACTIVITY, mode);
             Application.Run(sample);
         }
 
@@ -358,6 +360,107 @@ namespace SRC_GUI
                 listBoxStatus.SelectedIndex = -1;
             }
         }
+
+        private void run_Click(object sender, EventArgs e)
+        {
+            if (cpu_cb.Checked) Config.isCPU = true;
+            else if (lcd_cb.Checked) Config.isLCD = true;
+
+            Thread thread = new Thread(() => SampleStart(2));
+            thread.Start();
+        }
+
+        private void SRC_GUI_Load(object sender, EventArgs e)
+        {
+            this.tabControl1.SelectedTab = this.tabPage2;
+            this.run.Enabled = false;
+            this.result.Enabled = false;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Parse powerParse = new Parse();
+            powerParse._Volt = 4.2;
+
+            double[,] ret = new double[5,5];
+
+            for (int i = 0; i <= 0; i += 10)
+            {
+                for (int j = 1; j <= 5; j++)
+                {
+                    string file = @"\util" + i + "_" + j;
+                    Console.WriteLine("util" + i + "_" + j);
+                    string filePath = Config.SAMPLEROOT+file;
+                    ArrayList results = powerParse.PowerParse(filePath);
+                  
+                    ret[0,j-1] = ProcessAvg(30, 50, results); //100 MHz
+                    ret[1,j-1] = ProcessAvg(160, 50, results); //200 MHz
+                    ret[2,j-1] = ProcessAvg(290, 50, results); //400 MHz
+                    ret[3,j-1] = ProcessAvg(420, 50, results); //800 MHz
+                    ret[4,j-1] = ProcessAvg(550, 50, results); //1000 MHz
+
+                }
+
+                double[] x = new double[5];
+                for (int m = 0; m < 5; m++)
+                {
+
+                    for (int n = 0; n < 5; n++)
+                    {
+                        x[n] = ret[m,n];
+                    }
+                    Array.Sort(x);
+                    double sum = 0;
+                    double avg = 0;
+                    sum = x[1] + x[2] + x[3];
+                    avg = sum / 3;
+                    Console.WriteLine(avg);
+                }
+
+            }
+           
+        }
+
+        private double ProcessAvg(int startIndex, int length, ArrayList ar)
+        {
+            double sum = 0.0;
+            double avg = 0.0;
+            int size = startIndex + length;
+
+            for (int i = startIndex; i <= size; i++)
+            {
+                sum += double.Parse(ar[i].ToString());
+            }
+
+            avg = sum / length;
+
+            return avg;
+        }
+
+        private void tabPage2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            textPowerMonitorSRC.Text = @"D:\Program Files (x86)\Monsoon Solutions Inc\Power Monitor\PowerToolCmd.exe";
+            textSampleRoot.Text = @"D:\SemiOnline";
+            Config.PACKAGE = "com.example.semionline";
+            Config.ACTIVITY = "com.example.semionline.MainActivity";
+            Config.ADB = @"D:\android-sdk_r16-windows\android-sdk-windows\platform-tools\adb.exe";
+
+            updateConfig();
+
+            this.run.Enabled = true;
+            this.result.Enabled = true;
+            this.init.Enabled = false;
+            
+        }
+
+       
+
+       
     }
 
     public class Config
@@ -388,5 +491,10 @@ namespace SRC_GUI
         public static string ACTIVITY = "";
 
         public static double VOLT = 4.2;
+
+        public static string ADB = "";
+
+        public static bool isCPU = false;
+        public static bool isLCD = false;
     }
 }
