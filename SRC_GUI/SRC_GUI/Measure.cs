@@ -47,7 +47,7 @@ namespace SRC_GUI
             }
             else if (Config.isLCD)
             {
-                this.stopTime = 800;
+                this.stopTime = 700;
             }
 
             //Set training app (Android)
@@ -224,7 +224,7 @@ namespace SRC_GUI
                     }
                     else if (Config.isLCD)
                     {
-
+                        this.Close();
                     }
                 }
 
@@ -261,7 +261,14 @@ namespace SRC_GUI
                 }
                 else if (this.currentTime == (this.stopTime-20))
                 {
-                    this.pullFile("/sdcard/semionline/", "util" + currentUtil + "_" + innerStep);
+                    string host = "";
+
+                    if (Config.isCPU)
+                        host = "util" + currentUtil + "_" + innerStep;
+                    else if (Config.isLCD)
+                        host = "lcd";
+
+                    this.pullFile("/sdcard/semionline/", host);
                 }
  
                 // Tick
@@ -288,7 +295,14 @@ namespace SRC_GUI
 
         private void startApp()
         {
-            callProcess(Config.ADB, " shell am start -n " + _package + @"/" + _activity + " --es extraKey "+currentUtil);            
+            if (Config.isCPU)
+            {
+                callProcess(Config.ADB, " shell am start -n " + _package + @"/" + _activity + " --es extraKey " + currentUtil);
+            }
+            else if (Config.isLCD)
+            {
+                callProcess(Config.ADB, " shell am start -n " + _package + @"/" + _activity + " --es extraKey lcd");
+            }
         }
 
         private void killApp()
@@ -299,17 +313,20 @@ namespace SRC_GUI
         private void StartMonsoon()
         {
             int offset = 0;
+            string path = "";
 
             if (Config.isCPU)
             { 
-                offset = 150; 
+                offset = 150;
+                path = savePath + "util" + currentUtil + "_" + innerStep;
             }
             else if (Config.isLCD)
             { 
                 offset = 50;
+                path = savePath + "lcd";
             }
 
-            callProcess(Config.POWERMETER, "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + savePath + "util" + currentUtil + "_" + innerStep + @"\power.pt4  /TRIGGER=DTXD" + (this.stopTime - offset) + "A");   
+            callProcess(Config.POWERMETER, "/USBPASSTHROUGH=AUTO /VOUT=" + Config.VOLT + " /KEEPPOWER /NOEXITWAIT /SAVEFILE=" + path + @"\power.pt4  /TRIGGER=DTXD" + (this.stopTime - offset) + "A");   
         }
 
         public void pullFile(String target, String host)
